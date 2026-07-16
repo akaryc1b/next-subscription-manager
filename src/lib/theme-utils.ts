@@ -25,7 +25,7 @@ export function generateCSSVariables(configOrTheme: ThemeConfig | Theme) {
 
   // 兼容旧版本调用
   const config: ThemeConfig = typeof configOrTheme === 'string'
-    ? { mode: configOrTheme, style: 'terminal' }
+    ? { mode: configOrTheme, style: 'modern' }
     : configOrTheme;
 
   const themeColors = colors[config.mode];
@@ -106,7 +106,7 @@ export function getSavedThemeConfig(): ThemeConfig | null {
 
   return {
     mode: (savedMode === 'dark' || savedMode === 'light' ? savedMode : 'dark') as ThemeMode,
-    style: (savedStyle === 'terminal' || savedStyle === 'modern' ? savedStyle : 'terminal') as ThemeStyle,
+    style: (savedStyle === 'terminal' || savedStyle === 'modern' ? savedStyle : 'modern') as ThemeStyle,
   };
 }
 

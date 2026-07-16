@@ -50,9 +50,9 @@ export const typography = {
   fontFamily: {
     terminal: terminalFonts,
     modern: modernFonts,
-    // 默认使用 Terminal
-    sans: terminalFonts.sans,
-    mono: terminalFonts.mono,
+    // 默认使用 Modern / Apple system fonts
+    sans: modernFonts.sans,
+    mono: modernFonts.mono,
   },
 
   // 字体大小 - 严格的模块化缩放
@@ -90,7 +90,7 @@ export const typography = {
   letterSpacing: {
     tighter: '-0.02em',
     tight: '0',
-    normal: '0.02em',   // 略微加宽，更有终端感
+    normal: '0',        // macOS-style natural tracking
     wide: '0.05em',
     wider: '0.1em',     // 标题使用
     widest: '0.15em',   // 强调效果

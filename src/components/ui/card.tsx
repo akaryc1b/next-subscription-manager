@@ -18,11 +18,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'border border-border bg-background-primary text-foreground-primary',
-      // 边框发光效果
-      'shadow-[0_0_10px_rgba(51,255,0,0.1)]',
-      // dark 模式下增强发光
-      'dark:shadow-[0_0_15px_rgba(51,255,0,0.15)]',
+      'glass-card text-foreground-primary',
       className
     )}
     {...props}
@@ -37,8 +33,7 @@ const CardHeader = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex flex-col space-y-1.5 p-4',
-      'border-b border-border',
+      'flex flex-col space-y-1.5 p-5',
       className
     )}
     {...props}
@@ -54,7 +49,7 @@ const CardTitle = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'text-lg font-medium leading-none tracking-wider uppercase',
+      'text-lg font-semibold leading-none tracking-tight',
       'text-foreground-primary',
       className
     )}
@@ -73,15 +68,13 @@ const CardTitleAscii = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'text-sm font-medium leading-none tracking-widest uppercase',
+      'text-sm font-semibold leading-none tracking-tight',
       'text-foreground-primary flex items-center gap-2',
       className
     )}
     {...props}
   >
-    <span className="text-foreground-muted">+---</span>
     {children}
-    <span className="text-foreground-muted">---+</span>
   </div>
 ));
 CardTitleAscii.displayName = 'CardTitleAscii';
@@ -102,7 +95,7 @@ const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-4', className)} {...props} />
+  <div ref={ref} className={cn('p-5', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 
@@ -113,8 +106,7 @@ const CardFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'flex items-center p-4',
-      'border-t border-border',
+      'flex items-center p-5 border-t border-border',
       className
     )}
     {...props}

@@ -10,8 +10,8 @@ import {
   Link as LinkIcon,
   Activity,
   RefreshCw,
-  Terminal,
-  ArrowRight,
+  Sparkles,
+  ArrowUpRight,
 } from 'lucide-react';
 
 /**
@@ -38,11 +38,8 @@ interface RecentActivity {
 }
 
 // ASCII 进度条生成器
-function generateProgressBar(value: number, max: number, width: number = 20): string {
-  const percentage = Math.min(value / Math.max(max, 1), 1);
-  const filled = Math.round(percentage * width);
-  const empty = width - filled;
-  return '[' + '|'.repeat(filled) + '.'.repeat(empty) + ']';
+function getProgress(value: number, max: number): number {
+  return Math.min(Math.round((value / Math.max(max, 1)) * 100), 100);
 }
 
 export default function DashboardPage() {
@@ -124,11 +121,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <Terminal className="h-8 w-8 text-accent-primary animate-pulse" />
-        <div className="text-foreground-secondary text-sm font-mono">
-          Loading system data...
-          <span className="terminal-cursor ml-1" />
-        </div>
+        <Sparkles className="h-8 w-8 text-accent-primary animate-pulse" />
+        <div className="text-foreground-secondary text-sm">Preparing your glass workspace...</div>
       </div>
     );
   }
@@ -169,157 +163,115 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
-      {/* 头部 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl lg:text-2xl font-bold tracking-wider uppercase flex items-center gap-2">
-            <span className="text-foreground-muted">{'>'}</span>
-            DASHBOARD
-          </h1>
-          <p className="text-xs lg:text-sm text-foreground-secondary mt-1">
-            System overview and quick access
-          </p>
+    <div className="space-y-6">
+      <section className="relative overflow-hidden rounded-[2rem] border border-border bg-background-tertiary p-6 backdrop-blur-2xl lg:p-8">
+        <div className="liquid-orb right-10 top-[-5rem] h-56 w-56 bg-background-active" />
+        <div className="liquid-orb bottom-[-6rem] left-24 h-64 w-64 bg-background-active" />
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-background-secondary px-3 py-1 text-xs font-medium text-foreground-secondary backdrop-blur-xl">
+              <Sparkles className="h-3.5 w-3.5 text-accent-primary" />
+              iOS 26 Liquid Glass
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">Subscription Control Center</h1>
+            <p className="mt-2 max-w-2xl text-sm text-foreground-secondary lg:text-base">
+              A macOS-inspired workspace for users, configs, subscription links, and access monitoring.
+            </p>
+          </div>
+          <Button onClick={fetchData} variant="secondary" disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
-        <Button
-          onClick={fetchData}
-          variant="outline"
-          size="sm"
-          disabled={refreshing}
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} sm:mr-2`}
-          />
-          <span className="hidden sm:inline">REFRESH</span>
-        </Button>
-      </div>
+      </section>
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
+          const progress = getProgress(stat.value, stat.max);
           return (
             <Link key={stat.title} href={stat.href}>
-              <Card className="hover:border-foreground-primary transition-colors cursor-pointer group">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-medium tracking-wider text-foreground-secondary">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className="h-4 w-4 text-foreground-muted group-hover:text-accent-primary transition-colors" />
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-3xl font-bold text-foreground-primary">
-                    {stat.value}
+              <Card className="group overflow-hidden hover:-translate-y-1 hover:border-border-hover hover:shadow-2xl">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div className="rounded-2xl bg-background-active p-3 text-accent-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 text-foreground-muted opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
-                  <div className="mt-2 font-mono text-xs text-foreground-muted">
-                    {generateProgressBar(stat.value, stat.max)}
+                  <div className="mt-5 text-4xl font-semibold tracking-tight text-foreground-primary">{stat.value}</div>
+                  <div className="mt-1 text-sm font-medium text-foreground-secondary">{stat.desc}</div>
+                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-background-active">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-info"
+                      style={{ width: `${progress}%` }}
+                    />
                   </div>
-                  <p className="text-xs text-foreground-secondary mt-1">
-                    {stat.desc}
-                  </p>
+                  <div className="mt-2 text-xs text-foreground-muted">{stat.title.toLowerCase()} capacity · {progress}%</div>
                 </CardContent>
               </Card>
             </Link>
           );
         })}
-      </div>
+      </section>
 
-      {/* 快速命令 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="text-foreground-muted">+---</span>
-            QUICK COMMANDS
-            <span className="text-foreground-muted">---+</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Link href="/users">
-              <Button variant="terminal" className="w-full justify-start">
-                $ cd /users
-              </Button>
-            </Link>
-            <Link href="/configs">
-              <Button variant="terminal" className="w-full justify-start">
-                $ cat /configs
-              </Button>
-            </Link>
-            <Link href="/monitor">
-              <Button variant="terminal" className="w-full justify-start">
-                $ tail -f logs
-              </Button>
-            </Link>
-            <Link href="/settings">
-              <Button variant="terminal" className="w-full justify-start">
-                $ vi ~/.settings
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 最近活动 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <span className="text-foreground-muted">+---</span>
-              RECENT ACTIVITY
-              <span className="text-foreground-muted">---+</span>
-            </CardTitle>
-            <Link href="/monitor">
-              <Button variant="ghost" size="sm">
-                VIEW ALL
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {recentActivity.length === 0 ? (
-            <div className="p-8 text-center text-foreground-muted text-sm font-mono">
-              <p>No recent activity</p>
-              <p className="text-xs mt-1">$ tail -f /var/log/access.log</p>
+      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { href: '/users', label: 'Manage users', desc: 'Create accounts and subscription policies', icon: Users },
+                { href: '/configs', label: 'Edit configs', desc: 'Maintain active YAML profiles', icon: FileText },
+                { href: '/monitor', label: 'Access monitor', desc: 'Review recent traffic and usage', icon: Activity },
+                { href: '/settings', label: 'Workspace settings', desc: 'Security, theme, and auth methods', icon: Sparkles },
+              ].map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Link key={action.href} href={action.href}>
+                    <div className="flex items-center gap-4 rounded-3xl border border-border bg-background-secondary p-4 backdrop-blur-xl hover:bg-background-hover">
+                      <div className="rounded-2xl bg-background-active p-3 text-accent-primary">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold">{action.label}</div>
+                        <div className="truncate text-xs text-foreground-muted">{action.desc}</div>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 text-foreground-muted" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {recentActivity.map((activity, index) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-background-hover transition-colors"
-                >
-                  <div className="flex items-center gap-3 font-mono text-sm">
-                    <span className="text-foreground-muted w-4">{index + 1}.</span>
-                    <span className="text-accent-success">{activity.email}</span>
-                    <span className="text-foreground-muted">accessed</span>
-                    <span className="text-accent-info">{activity.configName}</span>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentActivity.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-border p-6 text-center text-sm text-foreground-muted">
+                No access events yet.
+              </div>
+            ) : (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-center gap-3 rounded-3xl bg-background-secondary p-3">
+                  <div className="h-2.5 w-2.5 rounded-full bg-accent-success shadow-[0_0_16px_var(--color-accent-success)]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{activity.email}</div>
+                    <div className="truncate text-xs text-foreground-muted">{activity.configName}</div>
                   </div>
-                  <span className="text-xs text-foreground-muted font-mono">
-                    [{getRelativeTime(activity.accessedAt)}]
-                  </span>
+                  <div className="text-xs text-foreground-muted">{getRelativeTime(activity.accessedAt)}</div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 系统状态 */}
-      <div className="border border-border p-3 lg:p-4 font-mono text-xs">
-        <div className="flex flex-wrap items-center gap-2 text-foreground-muted">
-          <span className="text-accent-success">●</span>
-          <span className="hidden sm:inline">SYSTEM STATUS: ONLINE</span>
-          <span className="sm:hidden">ONLINE</span>
-          <span className="hidden sm:inline mx-2">|</span>
-          <span>USERS: {stats.users}</span>
-          <span className="mx-2">|</span>
-          <span>CONFIGS: {stats.configs}</span>
-          <span className="mx-2">|</span>
-          <span className="hidden sm:inline">TODAY: {stats.todayAccesses} requests</span>
-          <span className="sm:hidden">TODAY: {stats.todayAccesses}</span>
-        </div>
-      </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

@@ -3,377 +3,113 @@
 @tailwind utilities;
 
 /* ============================================
-   Design System - Global Styles
-   支持 Terminal 和 Modern 两种风格
+   Liquid Glass global surface system
    ============================================ */
 
 @layer base {
   :root {
-    --font-sans: Consolas, Monaco, "Courier New", monospace;
-    --font-mono: Consolas, Monaco, "Courier New", monospace;
+    --font-sans: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+    --font-mono: "SF Mono", "JetBrains Mono", Consolas, monospace;
   }
 
-  /* 全局边框颜色 */
   * {
     @apply border-border;
   }
 
-  /* 基础样式 */
   html {
-    color-scheme: dark;
+    min-height: 100%;
   }
 
   body {
-    @apply bg-background-primary text-foreground-primary;
+    @apply min-h-screen bg-background-primary text-foreground-primary;
     font-family: var(--font-sans);
-    font-feature-settings: 'liga' 1, 'calt' 1;
+    font-feature-settings: 'cv02' 1, 'cv03' 1, 'cv04' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* 主题切换过渡动画 */
-    transition:
-      background-color 300ms ease-in-out,
-      color 300ms ease-in-out,
-      font-family 300ms ease-in-out,
-      text-shadow 300ms ease-in-out;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.2), transparent 26rem),
+      radial-gradient(circle at 82% 4%, rgba(191, 90, 242, 0.18), transparent 24rem),
+      linear-gradient(135deg, var(--color-background-primary), var(--color-background-tertiary));
+    background-attachment: fixed;
   }
 
-  /* 为所有元素添加过渡效果 */
+  .dark body {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(100, 210, 255, 0.18), transparent 28rem),
+      radial-gradient(circle at 82% 4%, rgba(191, 90, 242, 0.18), transparent 24rem),
+      linear-gradient(135deg, #060914, var(--color-background-primary));
+  }
+
   * {
     transition:
-      border-radius 300ms ease-in-out,
-      box-shadow 300ms ease-in-out;
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      color 180ms ease,
+      transform 180ms ease;
   }
 
-  /* Terminal 风格特有样式 */
-  [data-theme-style="terminal"] body {
-    text-shadow: 0 0 5px var(--color-foreground-primary, #33ff00);
-  }
-
-  [data-theme-style="terminal"] h1,
-  [data-theme-style="terminal"] h2,
-  [data-theme-style="terminal"] h3,
-  [data-theme-style="terminal"] h4,
-  [data-theme-style="terminal"] h5,
-  [data-theme-style="terminal"] h6 {
-    @apply uppercase tracking-wider;
-    text-shadow: 0 0 10px var(--color-foreground-primary, #33ff00);
-  }
-
-  [data-theme-style="terminal"] a:hover {
-    text-shadow: 0 0 15px var(--color-foreground-primary, #33ff00);
-  }
-
-  /* Modern 风格 - 无发光效果 */
-  [data-theme-style="modern"] body {
-    text-shadow: none;
-  }
-
-  [data-theme-style="modern"] h1,
-  [data-theme-style="modern"] h2,
-  [data-theme-style="modern"] h3,
-  [data-theme-style="modern"] h4,
-  [data-theme-style="modern"] h5,
-  [data-theme-style="modern"] h6 {
-    text-shadow: none;
-    text-transform: none;
-    letter-spacing: normal;
-  }
-
-  /* 链接样式 */
   a {
     @apply text-foreground-primary;
     text-decoration: none;
   }
 
-  /* 选中文本样式 */
   ::selection {
-    background-color: var(--color-foreground-primary, #33ff00);
-    color: var(--color-background-primary, #0a0a0a);
+    background-color: var(--color-ring);
+    color: var(--color-foreground-primary);
   }
 
-  /* 滚动条样式 */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-background-secondary, #0d0d0d);
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border-default, #1f521f);
-    border: 1px solid var(--color-border-subtle, #143314);
+    background: var(--color-border-default);
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-clip: content-box;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-hover, #22aa00);
-  }
-
-  /* 焦点样式 */
   :focus-visible {
-    outline: 2px solid var(--color-foreground-primary, #33ff00);
+    outline: 3px solid var(--color-ring);
     outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* ============================================
-     Terminal Cursor - 闪烁光标
-     ============================================ */
-  .terminal-cursor {
-    @apply inline-block w-2 h-5 bg-foreground-primary;
-    animation: terminal-blink 1.06s steps(2, start) infinite;
+  .glass-panel {
+    @apply border border-border bg-background-secondary backdrop-blur-2xl shadow-2xl;
+    box-shadow:
+      0 24px 80px rgba(15, 23, 42, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
+  .glass-card {
+    @apply rounded-3xl border border-border bg-background-tertiary backdrop-blur-2xl shadow-xl;
+    box-shadow:
+      0 20px 60px rgba(15, 23, 42, 0.09),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-button {
+    @apply rounded-full border border-border bg-background-secondary backdrop-blur-xl;
+  }
+
+  .liquid-orb {
+    @apply pointer-events-none absolute rounded-full blur-3xl;
+  }
+
+  .terminal-cursor,
   .terminal-cursor-underscore {
-    @apply inline-block w-2 h-0.5 bg-foreground-primary;
-    animation: terminal-blink 1.06s steps(2, start) infinite;
-  }
-
-  /* ============================================
-     Terminal Text Glow - 文字发光
-     ============================================ */
-  .terminal-glow {
-    text-shadow: 0 0 5px var(--color-foreground-primary, #33ff00);
-  }
-
-  .terminal-glow-strong {
-    text-shadow:
-      0 0 5px var(--color-foreground-primary, #33ff00),
-      0 0 15px var(--color-foreground-primary, #33ff00),
-      0 0 30px var(--color-foreground-primary, #33ff00);
-  }
-
-  .terminal-glow-amber {
-    text-shadow: 0 0 5px var(--color-accent-warning, #ffb000);
-    color: var(--color-accent-warning, #ffb000);
-  }
-
-  .terminal-glow-error {
-    text-shadow: 0 0 5px var(--color-accent-error, #ff3333);
-    color: var(--color-accent-error, #ff3333);
-  }
-
-  .terminal-glow-info {
-    text-shadow: 0 0 5px var(--color-accent-info, #00ccff);
-    color: var(--color-accent-info, #00ccff);
-  }
-
-  /* ============================================
-     Terminal Prompt - 命令行提示符
-     ============================================ */
-  .terminal-prompt::before {
-    content: '> ';
-    @apply text-foreground-secondary;
-  }
-
-  .terminal-prompt-user::before {
-    content: 'user@okcomputer:~$ ';
-    @apply text-foreground-secondary;
-  }
-
-  .terminal-prompt-root::before {
-    content: 'root@okcomputer:~# ';
-    @apply text-foreground-secondary;
-  }
-
-  /* ============================================
-     Terminal Status Codes - 状态码
-     ============================================ */
-  .terminal-status-ok::after {
-    content: ' [OK]';
-    @apply text-accent-success;
-    text-shadow: 0 0 5px var(--color-accent-success, #33ff00);
-  }
-
-  .terminal-status-err::after {
-    content: ' [ERR]';
-    @apply text-accent-error;
-    text-shadow: 0 0 5px var(--color-accent-error, #ff3333);
-  }
-
-  .terminal-status-warn::after {
-    content: ' [WARN]';
-    @apply text-accent-warning;
-    text-shadow: 0 0 5px var(--color-accent-warning, #ffb000);
-  }
-
-  /* ============================================
-     Terminal Card/Window - 终端窗口
-     ============================================ */
-  .terminal-window {
-    @apply border border-border bg-background-primary;
-    box-shadow: 0 0 10px rgba(51, 255, 0, 0.1);
-  }
-
-  .terminal-window-header {
-    @apply border-b border-border px-4 py-2;
-    @apply text-sm uppercase tracking-widest;
-    @apply flex items-center justify-between;
-  }
-
-  /* ASCII 风格标题栏 */
-  .terminal-window-header-ascii::before {
-    content: '+---';
-    @apply text-foreground-muted mr-2;
-  }
-
-  .terminal-window-header-ascii::after {
-    content: '---+';
-    @apply text-foreground-muted ml-2;
-  }
-
-  /* ============================================
-     Terminal Dividers - 分隔线
-     ============================================ */
-  .terminal-divider {
-    @apply border-t border-border my-4;
-  }
-
-  .terminal-divider-dashed {
-    @apply border-t border-dashed border-border my-4;
-  }
-
-  .terminal-divider-double {
-    @apply my-4 text-foreground-muted text-center;
-  }
-
-  .terminal-divider-double::before {
-    content: '════════════════════════════════════════';
-  }
-
-  /* ============================================
-     Terminal Progress Bar - ASCII 进度条
-     ============================================ */
-  .terminal-progress {
-    @apply font-mono text-sm;
-  }
-
-  .terminal-progress::before {
-    content: '[';
-    @apply text-foreground-muted;
-  }
-
-  .terminal-progress::after {
-    content: ']';
-    @apply text-foreground-muted;
-  }
-
-  /* ============================================
-     Scanline Effect - CRT 扫描线效果
-     ============================================ */
-  .terminal-scanlines {
-    position: relative;
+    @apply hidden;
   }
 
   .terminal-scanlines::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.15) 0px,
-      rgba(0, 0, 0, 0.15) 1px,
-      transparent 1px,
-      transparent 2px
-    );
-    opacity: 0.3;
-  }
-
-  /* ============================================
-     Typewriter Effect - 打字机效果
-     ============================================ */
-  .terminal-typewriter {
-    overflow: hidden;
-    white-space: nowrap;
-    animation: terminal-typing 2s steps(40, end);
-  }
-
-  .terminal-typewriter-cursor::after {
-    content: '█';
-    animation: terminal-blink 1.06s steps(2, start) infinite;
-  }
-
-  /* ============================================
-     Glitch Effect - 故障效果
-     ============================================ */
-  .terminal-glitch:hover {
-    animation: terminal-glitch 0.3s ease-in-out;
-  }
-}
-
-@layer utilities {
-  /* 隐藏滚动条但保持可滚动 */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* 文本截断 */
-  .text-ellipsis-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* 无发光文字 (用于需要清晰文字的地方) */
-  .no-glow {
-    text-shadow: none !important;
-  }
-
-  /* 强制大写 */
-  .terminal-uppercase {
-    @apply uppercase tracking-wider;
-  }
-}
-
-/* ============================================
-   Keyframe Animations - 关键帧动画定义
-   ============================================ */
-@keyframes terminal-blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-@keyframes terminal-typing {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
-@keyframes terminal-scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes terminal-glitch {
-  0%, 100% { transform: translateX(0); }
-  10% { transform: translateX(-2px); }
-  20% { transform: translateX(2px); }
-  30% { transform: translateX(-1px); }
-  40% { transform: translateX(1px); }
-  50% { transform: translateX(0); }
-}
-
-@keyframes terminal-glow-pulse {
-  0%, 100% {
-    text-shadow: 0 0 5px var(--color-foreground-primary, #33ff00);
-    opacity: 1;
-  }
-  50% {
-    text-shadow:
-      0 0 15px var(--color-foreground-primary, #33ff00),
-      0 0 25px var(--color-foreground-primary, #33ff00);
-    opacity: 0.9;
+    content: none;
   }
 }
