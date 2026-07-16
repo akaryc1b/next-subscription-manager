@@ -204,7 +204,7 @@ export default function UsersPage() {
         expiresAt: undefined,
         configIds: [],
       });
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('Failed to create user');
     }
@@ -239,7 +239,7 @@ export default function UsersPage() {
         expiresAt: undefined,
         configIds: [],
       });
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('Failed to update user');
     }
@@ -249,7 +249,7 @@ export default function UsersPage() {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
       await fetch(`/api/users/${id}`, { method: 'DELETE' });
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('Failed to delete user');
     }
@@ -262,7 +262,7 @@ export default function UsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !user.isActive }),
       });
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('Failed to toggle user status');
     }
@@ -306,7 +306,7 @@ export default function UsersPage() {
         return;
       }
       setSubscriptionDialogOpen(false);
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('更新订阅设置失败');
     }
@@ -328,7 +328,7 @@ export default function UsersPage() {
         return;
       }
       setSubscriptionDialogOpen(false);
-      fetchUsers();
+      fetchUsers(searchTerm || undefined);
     } catch (err) {
       setError('重置订阅链接失败');
     } finally {
@@ -386,10 +386,10 @@ export default function UsersPage() {
   const renderUserCard = (user: User, index: number) => {
     const status = getUserStatusLabel(user);
     return (
-      <div className="border border-border bg-background-secondary p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
+      <div className="border border-border bg-background-secondary p-3 space-y-3 sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-foreground-muted text-xs font-mono">
                 #{String(index + 1).padStart(2, '0')}
               </span>
@@ -397,23 +397,23 @@ export default function UsersPage() {
                 [{status.text}]
               </span>
             </div>
-            <div className="text-accent-info font-mono text-sm break-all">
+            <div className="text-accent-info font-mono text-sm break-all leading-5">
               {user.email}
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)}>
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)} className="w-full sm:w-8">
               <Power className={`h-4 w-4 ${user.isActive ? 'text-accent-success' : 'text-foreground-muted'}`} />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)}>
+            <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)} className="w-full sm:w-8">
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(user.id)} className="hover:text-accent-error">
+            <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(user.id)} className="w-full hover:text-accent-error sm:w-8">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+        <div className="grid grid-cols-1 gap-2 text-xs font-mono min-[380px]:grid-cols-2">
           <div>
             <span className="text-foreground-muted">ROLE: </span>
             <span className={user.role === 'admin' ? 'text-accent-warning' : 'text-foreground-secondary'}>
@@ -439,30 +439,30 @@ export default function UsersPage() {
                 {user.subscription.accessCount}/{user.subscription.maxAccess === 0 ? '∞' : user.subscription.maxAccess}
               </span>
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => copySubscriptionLink(user.subscription!.token, user.id)}
-                className="flex-1 h-8"
+                className="h-8 min-w-0 px-2"
               >
                 {copySuccess === user.id ? (
                   <><Check className="h-3 w-3 mr-1 text-accent-success" /><span className="text-accent-success text-xs">COPIED</span></>
                 ) : (
-                  <><Copy className="h-3 w-3 mr-1" /><span className="text-xs">LINK</span></>
+                  <><Copy className="h-3 w-3 mr-1" /><span className="text-xs">SUB</span></>
                 )}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => copyShadowrocketLink(user.subscription!.token, user.id)}
-                className="flex-1 h-8"
+                className="h-8 min-w-0 px-2"
                 title="Copy Shadowrocket subscription link"
               >
                 {copyRocketSuccess === user.id ? (
                   <><Check className="h-3 w-3 mr-1 text-accent-success" /><span className="text-accent-success text-xs">COPIED</span></>
                 ) : (
-                  <><Rocket className="h-3 w-3 mr-1" /><span className="text-xs">ROCKET</span></>
+                  <><Rocket className="h-3 w-3 mr-1" /><span className="text-xs">SR</span></>
                 )}
               </Button>
               <Button
@@ -574,11 +574,11 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
+    <div className="space-y-4 p-3 sm:p-4 lg:space-y-6 lg:p-6">
       {/* 头部 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold tracking-wider uppercase flex items-center gap-2">
+          <h1 className="text-lg font-bold tracking-wider uppercase flex items-center gap-2 sm:text-xl lg:text-2xl">
             <span className="text-foreground-muted">{'>'}</span>
             USER MANAGEMENT
           </h1>
@@ -591,21 +591,22 @@ export default function UsersPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Button
             onClick={() => fetchUsers(searchTerm || undefined)}
             variant="outline"
             size="sm"
             disabled={refreshing}
+            className="w-full sm:w-auto"
           >
             <RefreshCw
               className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} sm:mr-2`}
             />
-            <span className="hidden sm:inline">REFRESH</span>
+            <span>REFRESH</span>
           </Button>
-          <Button onClick={openCreateDialog} size="sm">
+          <Button onClick={openCreateDialog} size="sm" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">ADD USER</span>
+            <span>ADD USER</span>
           </Button>
         </div>
       </div>
@@ -615,10 +616,10 @@ export default function UsersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
         <Input
           type="text"
-          placeholder="Search by email (e.g., akary, test, @gmail.com)..."
+          placeholder="Search email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-10 font-mono"
+          className="pl-10 pr-10 font-mono text-sm"
         />
         {searchTerm && (
           <button
