@@ -47,7 +47,7 @@ const DialogContent = React.forwardRef<
         'max-h-[calc(100dvh-1.5rem)] overflow-y-auto',
         'translate-x-[-50%] translate-y-[-50%]',
         // Liquid glass window style
-        'relative rounded-3xl border border-border bg-background-tertiary text-foreground-primary backdrop-blur-2xl',
+        'rounded-3xl border border-border bg-background-tertiary text-foreground-primary backdrop-blur-2xl',
         // Soft app-wide glass shadow
         'shadow-2xl shadow-black/20',
         'before:pointer-events-none before:absolute before:inset-0 before:rounded-3xl before:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]',
