@@ -33,7 +33,7 @@ export default function DashboardLayout({
       </div>
       <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 lg:pl-4">
         <Header />
-        <main className="flex-1 overflow-y-auto rounded-[1.5rem] border border-border bg-background-secondary/90 p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto rounded-[1.5rem] border border-border bg-background-secondary p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-4 lg:p-6">
           {children}
         </main>
       </div>

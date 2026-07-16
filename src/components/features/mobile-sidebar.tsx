@@ -17,7 +17,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="flex h-dvh w-[min(22rem,calc(100vw-1.5rem))] flex-col border-border bg-background-secondary/95 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-2xl sm:p-4">
+      <SheetContent side="left" className="flex h-dvh w-[min(22rem,calc(100vw-1.5rem))] flex-col border-border bg-background-secondary p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] backdrop-blur-2xl sm:p-4">
         <SheetTitle className="sr-only">Navigation menu</SheetTitle>
         <div className="flex items-center gap-3 rounded-3xl border border-border bg-background-tertiary p-3 shadow-lg">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary text-accent-foreground shadow-lg">

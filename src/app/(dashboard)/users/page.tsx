@@ -386,7 +386,7 @@ export default function UsersPage() {
   const renderUserCard = (user: User, index: number) => {
     const status = getUserStatusLabel(user);
     return (
-      <div className="space-y-3 rounded-3xl border border-border bg-background-secondary/90 p-4 shadow-lg backdrop-blur-xl">
+      <div className="space-y-3 rounded-3xl border border-border bg-background-secondary p-4 shadow-lg backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -413,7 +413,7 @@ export default function UsersPage() {
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border bg-background-tertiary/70 p-3 text-xs font-mono min-[380px]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border bg-background-tertiary p-3 text-xs font-mono min-[380px]:grid-cols-2">
           <div>
             <span className="text-foreground-muted">ROLE: </span>
             <span className={user.role === 'admin' ? 'text-accent-warning' : 'text-foreground-secondary'}>
@@ -576,7 +576,7 @@ export default function UsersPage() {
   return (
     <div className="space-y-4 lg:space-y-6">
       {/* 头部 */}
-      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-border bg-background-tertiary/70 p-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:rounded-[2rem]">
+      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-border bg-background-tertiary p-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:rounded-[2rem]">
         <div>
           <h1 className="flex items-center gap-2 text-lg font-bold uppercase tracking-wider sm:text-xl lg:text-2xl">
             <span className="text-foreground-muted">{'>'}</span>
@@ -612,7 +612,7 @@ export default function UsersPage() {
       </div>
 
       {/* 搜索栏 */}
-      <div className="relative rounded-[1.5rem] border border-border bg-background-tertiary/70 p-2 backdrop-blur-xl">
+      <div className="relative rounded-[1.5rem] border border-border bg-background-tertiary p-2 backdrop-blur-xl">
         <Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
         <Input
           type="text"
@@ -972,7 +972,7 @@ export default function UsersPage() {
       </Dialog>
 
       {/* 底部状态栏 */}
-      <div className="rounded-3xl border border-border bg-background-tertiary/70 p-3 font-mono text-xs backdrop-blur-xl">
+      <div className="rounded-3xl border border-border bg-background-tertiary p-3 font-mono text-xs backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-2 text-foreground-muted">
           <span className="text-accent-success">●</span>
           <span className="hidden sm:inline">DATABASE STATUS: CONNECTED</span>
