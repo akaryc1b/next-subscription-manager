@@ -7,13 +7,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "dotenv -e .env -- tsx scripts/seed.ts",
     "db:migrate:email": "dotenv -e .env -- tsx prisma/migrations/add-email-to-users.ts",
-    "reset-password": "dotenv -e .env -- tsx scripts/reset-password.ts"
+    "reset-password": "dotenv -e .env -- tsx scripts/reset-password.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.9",
@@ -52,7 +54,9 @@
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@eslint/eslintrc": "^3.3.3",
+    "vitest": "^4.0.15"
   },
   "pnpm": {
     "overrides": {

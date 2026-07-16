@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:24-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -14,9 +14,9 @@ COPY package.json pnpm-lock.yaml ./
 # Copy prisma schema first (needed for generate)
 COPY prisma ./prisma
 
-# Install ALL dependencies (including dev for tsx)
+# Install ALL dependencies (including dev tools needed during build)
 RUN pnpm install --frozen-lockfile
-RUN npx prisma generate
+RUN pnpm db:generate
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -34,14 +34,17 @@ RUN mkdir -p ./public
 # Build Next.js
 RUN pnpm build
 
+# Dedicated migration image; not used by the production app runner.
+FROM deps AS migration
+WORKDIR /app
+COPY . .
+CMD ["pnpm", "prisma", "migrate", "deploy"]
+
 # Production image
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-
-# Install pnpm for prisma generate and seed
-RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -53,21 +56,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy prisma schema and scripts for seed
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/src/lib/auth.ts ./src/lib/auth.ts
-COPY --from=builder /app/src/lib/prisma.ts ./src/lib/prisma.ts
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-
-# Install prisma, tsx for seed script
-RUN pnpm install --prod --frozen-lockfile
-RUN npx prisma generate
-
-# Change ownership of scripts for nextjs user
-RUN chown -R nextjs:nodejs ./scripts ./src
+# Copy generated Prisma Client artifacts produced during the build stages.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nextjs
 
