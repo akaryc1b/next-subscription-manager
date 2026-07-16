@@ -69,8 +69,7 @@ export default function ConfigsPage() {
   const [editingConfig, setEditingConfig] = useState<Config | null>(null);
   const [formData, setFormData] = useState({ name: '', content: '' });
   const [error, setError] = useState('');
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { isMobile, isHydrated } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
 
   useEffect(() => {
     fetchConfigs();
@@ -79,7 +78,7 @@ export default function ConfigsPage() {
   const fetchConfigs = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/configs');
+      const res = await fetch('/api/configs?includeContent=true');
       const data = await res.json();
       setConfigs(data.configs);
     } catch (err) {

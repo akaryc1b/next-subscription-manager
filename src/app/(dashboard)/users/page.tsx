@@ -125,8 +125,7 @@ export default function UsersPage() {
   const [subscriptionUser, setSubscriptionUser] = useState<User | null>(null);
   const [subscriptionMaxAccess, setSubscriptionMaxAccess] = useState(20);
   const [resetting, setResetting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { isMobile, isHydrated } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
 
   useEffect(() => {
     fetchConfigs();

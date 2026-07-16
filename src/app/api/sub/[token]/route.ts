@@ -201,7 +201,7 @@ export async function GET(
     }
 
     const ip = getClientIp(request)
-    const userAgent = request.headers.get('user-agent') || undefined
+    const userAgent = request.headers.get('user-agent')?.slice(0, 512) || undefined
 
     // 更新访问计数并记录访问日志
     const accessGranted = await prisma.$transaction(async tx => {

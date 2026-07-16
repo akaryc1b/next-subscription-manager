@@ -3,6 +3,8 @@ import { requireAdmin } from '@/lib/authorization'
 import { prisma } from '@/lib/prisma'
 import { hashCredentialPassword, upsertCredentialPassword } from '@/lib/credential-account'
 import { randomBytes } from 'crypto'
+import { formatZodError, paginationQuerySchema, userCreateSchema } from '@/lib/api-schemas'
+import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,16 +14,16 @@ export async function GET(request: NextRequest) {
     // 获取搜索参数
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
+    const pagination = paginationQuerySchema.parse(Object.fromEntries(searchParams))
+    const page = Number(pagination.page)
+    const pageSize = Number(pagination.pageSize)
+    const where = search
+      ? { email: { contains: search, mode: 'insensitive' as const } }
+      : undefined
 
-    const users = await prisma.user.findMany({
-      where: search
-        ? {
-            email: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          }
-        : undefined,
+    const [users, total] = await prisma.$transaction([
+      prisma.user.findMany({
+      where,
       select: {
         id: true,
         email: true,
@@ -47,9 +49,13 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc',
       },
-    })
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+      prisma.user.count({ where }),
+    ])
 
-    return NextResponse.json({ users })
+    return NextResponse.json({ users, pagination: { page, pageSize, total, pageCount: Math.ceil(Number(total) / pageSize) } })
   } catch (error) {
     return NextResponse.json(
       { error: '获取用户列表失败' },
@@ -63,38 +69,7 @@ export async function POST(request: NextRequest) {
     const adminGuard = await requireAdmin(request)
     if (adminGuard.response) return adminGuard.response
 
-    const { email, password, role, expiresAt, configIds } = await request.json()
-    const normalizedRole = role || 'user'
-
-    if (!email) {
-      return NextResponse.json(
-        { error: '邮箱不能为空' },
-        { status: 400 }
-      )
-    }
-
-    // 简单的邮箱格式验证
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: '邮箱格式无效' },
-        { status: 400 }
-      )
-    }
-
-    if (!['user', 'admin'].includes(normalizedRole)) {
-      return NextResponse.json(
-        { error: '用户角色无效' },
-        { status: 400 }
-      )
-    }
-
-    if (configIds !== undefined && (!Array.isArray(configIds) || !configIds.every((configId: unknown) => typeof configId === 'string'))) {
-      return NextResponse.json(
-        { error: '配置列表无效' },
-        { status: 400 }
-      )
-    }
+    const { email, password, role: normalizedRole, expiresAt, configIds } = userCreateSchema.parse(await request.json())
 
     const isAdmin = normalizedRole === 'admin'
 
@@ -119,7 +94,7 @@ export async function POST(request: NextRequest) {
         data: {
           email,
           role: normalizedRole,
-          expiresAt: expiresAt ? new Date(expiresAt) : null,
+          expiresAt: expiresAt ?? null,
           subscription: {
             create: {
               token,
@@ -180,8 +155,11 @@ export async function POST(request: NextRequest) {
       user,
       activationLink,
     })
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: formatZodError(error) }, { status: 400 })
+    }
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
         { error: '该邮箱已被使用' },
         { status: 400 }

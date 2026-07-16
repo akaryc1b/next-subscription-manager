@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/authorization'
 import { prisma } from '@/lib/prisma'
 import { hashCredentialPassword, upsertCredentialPassword } from '@/lib/credential-account'
+import { formatZodError, userUpdateSchema } from '@/lib/api-schemas'
+import { z } from 'zod'
 
 export async function PUT(
   request: NextRequest,
@@ -11,40 +13,16 @@ export async function PUT(
     const adminGuard = await requireAdmin(request)
     if (adminGuard.response) return adminGuard.response
 
-    const { email, password, role, isActive, isBanned, expiresAt, configIds } = await request.json()
+    const { email, password, role, isActive, isBanned, expiresAt, configIds } = userUpdateSchema.parse(await request.json())
     const { id } = await params
 
-    if (role !== undefined && !['user', 'admin'].includes(role)) {
-      return NextResponse.json(
-        { error: '用户角色无效' },
-        { status: 400 }
-      )
-    }
-
-    if (configIds !== undefined && (!Array.isArray(configIds) || !configIds.every((configId: unknown) => typeof configId === 'string'))) {
-      return NextResponse.json(
-        { error: '配置列表无效' },
-        { status: 400 }
-      )
-    }
-
-    const data: any = {}
-    if (email) {
-      // 简单的邮箱格式验证
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-        return NextResponse.json(
-          { error: '邮箱格式无效' },
-          { status: 400 }
-        )
-      }
-      data.email = email
-    }
+    const data: Record<string, unknown> = {}
+    if (email) data.email = email
     const passwordHash = password ? await hashCredentialPassword(password) : null
     if (role) data.role = role
     if (typeof isActive === 'boolean') data.isActive = isActive
     if (typeof isBanned === 'boolean') data.isBanned = isBanned
-    if (expiresAt !== undefined) data.expiresAt = expiresAt ? new Date(expiresAt) : null
+    if (expiresAt !== undefined) data.expiresAt = expiresAt
 
     const user = await prisma.$transaction(async tx => {
       if (configIds !== undefined) {
@@ -89,8 +67,11 @@ export async function PUT(
     })
 
     return NextResponse.json({ user })
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: formatZodError(error) }, { status: 400 })
+    }
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
       return NextResponse.json(
         { error: '该邮箱已被使用' },
         { status: 400 }
