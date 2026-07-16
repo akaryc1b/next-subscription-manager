@@ -149,7 +149,7 @@ export function DatePicker({ date, onDateChange, placeholder = "选择日期" }:
                         variant="ghost"
                         className={cn(
                           "h-9 w-9 p-0 font-normal",
-                          selected && "bg-accent-primary text-foreground-primary hover:bg-accent-primaryHover",
+                          selected && "bg-accent-primary text-accent-foreground hover:bg-accent-primaryHover",
                           today && !selected && "bg-background-hover text-foreground-primary"
                         )}
                         onClick={() => handleDateClick(day)}
