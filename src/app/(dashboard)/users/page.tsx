@@ -690,7 +690,7 @@ export default function UsersPage() {
 
       {/* 用户表单对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg overflow-hidden p-0">
+        <DialogContent className="max-w-lg p-0">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? '编辑用户' : '创建用户'}
