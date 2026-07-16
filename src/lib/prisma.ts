@@ -1,9 +1,33 @@
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient as PrismaClientType } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+  prisma: PrismaClientType | undefined
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
+type PrismaClientConstructor = new () => PrismaClientType
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+function createPrismaClient() {
+  // Delay loading the generated Prisma client until the app actually touches
+  // the database. This keeps Next.js page-data collection from crashing in
+  // environments where `prisma generate` has not populated node_modules yet.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PrismaClient } = require('@prisma/client') as {
+    PrismaClient: PrismaClientConstructor
+  }
+
+  return new PrismaClient()
+}
+
+function getPrismaClient() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient()
+  }
+
+  return globalForPrisma.prisma
+}
+
+export const prisma = new Proxy({} as PrismaClientType, {
+  get(_target, property, receiver) {
+    return Reflect.get(getPrismaClient(), property, receiver)
+  },
+})
