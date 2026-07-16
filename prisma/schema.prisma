@@ -1,0 +1,191 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(uuid())
+  username        String?          @unique
+  password        String?
+  email           String           @unique
+  name            String?
+  emailVerified   Boolean          @default(false) @map("email_verified")
+  image           String?
+  role            String           @default("user")
+  isActive        Boolean          @default(true) @map("is_active")
+  isBanned        Boolean          @default(false) @map("is_banned")
+  expiresAt       DateTime?        @map("expires_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  configs         Config[]
+  subscription    Subscription?
+  userConfigs     UserConfig[]
+  accounts        Account[]
+  sessions        Session[]
+  activationToken ActivationToken?
+
+  passkeys Passkey[]
+
+  @@map("users")
+}
+
+model Config {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  name        String
+  content     String       @db.Text
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userConfigs UserConfig[]
+
+  @@map("configs")
+}
+
+model UserConfig {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  configId  String   @map("config_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  config    Config   @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, configId])
+  @@map("user_configs")
+}
+
+model Subscription {
+  id          String      @id @default(uuid())
+  userId      String      @unique @map("user_id")
+  token       String      @unique
+  maxAccess   Int         @default(20) @map("max_access")
+  accessCount Int         @default(0) @map("access_count")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessLogs  AccessLog[]
+
+  @@map("subscriptions")
+}
+
+model AccessLog {
+  id             String       @id @default(uuid())
+  subscriptionId String       @map("subscription_id")
+  ipAddress      String       @map("ip_address")
+  userAgent      String?      @map("user_agent")
+  accessedAt     DateTime     @default(now()) @map("accessed_at")
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("access_logs")
+}
+
+model SecurityEvent {
+  id         String   @id @default(uuid())
+  type       String
+  severity   String   @default("info")
+  method     String
+  path       String
+  statusCode Int?     @map("status_code")
+  ipAddress  String   @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  userId     String?  @map("user_id")
+  identifier String?
+  message    String?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([userId, createdAt])
+  @@map("security_events")
+}
+
+model Account {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  accountId    String    @map("account_id")
+  providerId   String    @map("provider_id")
+  accessToken  String?   @map("access_token")
+  refreshToken String?   @map("refresh_token")
+  idToken      String?   @map("id_token")
+  expiresAt    DateTime? @map("expires_at")
+  password     String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model ActivationToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@map("activation_tokens")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([identifier, value])
+  @@map("verifications")
+  @@index([identifier])
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime?
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
+}
