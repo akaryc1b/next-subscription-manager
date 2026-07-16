@@ -1,6 +1,6 @@
 # Subscription 订阅管理器
 
-现代化的Clash代理配置订阅管理系统，基于Next.js 15全栈架构。
+基于Next.js 15全栈架构。
 
 ## ✨ 功能特性
 
