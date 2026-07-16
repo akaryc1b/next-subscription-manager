@@ -68,6 +68,13 @@ export async function GET(request: NextRequest) {
         activeConfigNames: log.subscription.user.userConfigs
           .filter((userConfig: { config: { isActive: boolean; name: string } }) => userConfig.config.isActive)
           .map((userConfig: { config: { isActive: boolean; name: string } }) => userConfig.config.name),
+        subscription: {
+          user: {
+            id: log.subscription.user.id,
+            email: log.subscription.user.email,
+            userConfigs: log.subscription.user.userConfigs,
+          },
+        },
       })),
     })
   } catch (error) {

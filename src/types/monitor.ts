@@ -19,6 +19,18 @@ export interface AccessLogView {
   userId: string;
   email: string;
   activeConfigNames: string[];
+  subscription: {
+    user: {
+      id: string;
+      email: string;
+      userConfigs: Array<{
+        config: {
+          name: string;
+          isActive: boolean;
+        };
+      }>;
+    };
+  };
 }
 
 export interface SecurityEventView {
