@@ -14,6 +14,20 @@ export async function PUT(
     const { email, password, role, isActive, isBanned, expiresAt, configIds } = await request.json()
     const { id } = await params
 
+    if (role !== undefined && !['user', 'admin'].includes(role)) {
+      return NextResponse.json(
+        { error: '用户角色无效' },
+        { status: 400 }
+      )
+    }
+
+    if (configIds !== undefined && (!Array.isArray(configIds) || !configIds.every((configId: unknown) => typeof configId === 'string'))) {
+      return NextResponse.json(
+        { error: '配置列表无效' },
+        { status: 400 }
+      )
+    }
+
     const data: any = {}
     if (email) {
       // 简单的邮箱格式验证

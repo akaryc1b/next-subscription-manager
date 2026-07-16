@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     if (adminGuard.response) return adminGuard.response
 
     const { email, password, role, expiresAt, configIds } = await request.json()
+    const normalizedRole = role || 'user'
 
     if (!email) {
       return NextResponse.json(
@@ -81,7 +82,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const isAdmin = role === 'admin'
+    if (!['user', 'admin'].includes(normalizedRole)) {
+      return NextResponse.json(
+        { error: '用户角色无效' },
+        { status: 400 }
+      )
+    }
+
+    if (configIds !== undefined && (!Array.isArray(configIds) || !configIds.every((configId: unknown) => typeof configId === 'string'))) {
+      return NextResponse.json(
+        { error: '配置列表无效' },
+        { status: 400 }
+      )
+    }
+
+    const isAdmin = normalizedRole === 'admin'
 
     if (isAdmin && !password) {
       return NextResponse.json(
@@ -103,7 +118,7 @@ export async function POST(request: NextRequest) {
       const createdUser = await tx.user.create({
         data: {
           email,
-          role: role || 'user',
+          role: normalizedRole,
           expiresAt: expiresAt ? new Date(expiresAt) : null,
           subscription: {
             create: {
