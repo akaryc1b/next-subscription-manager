@@ -27,6 +27,12 @@ import {
   Rocket,
   RefreshCcw,
   Settings2,
+  Mail,
+  KeyRound,
+  ShieldCheck,
+  CalendarClock,
+  SlidersHorizontal,
+  Ban,
 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
@@ -684,25 +690,21 @@ export default function UsersPage() {
 
       {/* 用户表单对话框 */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg overflow-hidden p-0">
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? 'EDIT USER' : 'CREATE USER'}
+              {editingUser ? '编辑用户' : '创建用户'}
             </DialogTitle>
           </DialogHeader>
           <form
             onSubmit={editingUser ? handleUpdate : handleCreate}
-            className="space-y-4"
+            className="space-y-5 p-5"
           >
             {/* 错误信息 */}
             {error && (
               <div className="border border-accent-error bg-accent-error/10 p-3 text-sm text-accent-error flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                <span>
-                  <span className="text-foreground-muted">[</span>
-                  ERROR
-                  <span className="text-foreground-muted">]</span> {error}
-                </span>
+                <span>{error}</span>
               </div>
             )}
 
@@ -710,9 +712,10 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-foreground-secondary text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-xs font-medium text-foreground-secondary"
               >
-                $ EMAIL
+                <Mail className="h-3.5 w-3.5" />
+                邮箱
               </Label>
               <Input
                 id="email"
@@ -731,15 +734,16 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="password"
-                className="text-foreground-secondary text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-xs font-medium text-foreground-secondary"
               >
-                $ PASSWORD{' '}
-                <span className="text-foreground-muted">
+                <KeyRound className="h-3.5 w-3.5" />
+                密码
+                <span className="font-normal text-foreground-muted">
                   {editingUser
-                    ? '(leave empty to keep)'
+                    ? '留空则不修改'
                     : formData.role === 'admin'
-                      ? '(required for admin)'
-                      : '(optional)'}
+                      ? '管理员必填'
+                      : '可选'}
                 </span>
               </Label>
               <Input
@@ -759,9 +763,10 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="role"
-                className="text-foreground-secondary text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-xs font-medium text-foreground-secondary"
               >
-                $ ROLE
+                <ShieldCheck className="h-3.5 w-3.5" />
+                角色
               </Label>
               <select
                 id="role"
@@ -771,8 +776,8 @@ export default function UsersPage() {
                 }
                 className="flex h-10 w-full rounded-2xl border border-border bg-background-secondary px-4 py-2 text-sm text-foreground-primary font-mono transition-all duration-fast focus-visible:outline-none focus-visible:border-border-strong focus-visible:ring-4 focus-visible:ring-ring"
               >
-                <option value="user">[USER] Regular User</option>
-                <option value="admin">[ADMIN] Administrator</option>
+                <option value="user">普通用户</option>
+                <option value="admin">管理员</option>
               </select>
             </div>
 
@@ -780,11 +785,12 @@ export default function UsersPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="expiresAt"
-                className="text-foreground-secondary text-xs uppercase tracking-wider"
+                className="flex items-center gap-2 text-xs font-medium text-foreground-secondary"
               >
-                $ EXPIRES AT{' '}
-                <span className="text-foreground-muted">
-                  (empty = permanent)
+                <CalendarClock className="h-3.5 w-3.5" />
+                到期时间
+                <span className="font-normal text-foreground-muted">
+                  留空为永久有效
                 </span>
               </Label>
               <DatePicker
@@ -792,19 +798,20 @@ export default function UsersPage() {
                 onDateChange={(date) =>
                   setFormData({ ...formData, expiresAt: date })
                 }
-                placeholder="Select expiration date"
+                placeholder="选择到期日期"
               />
             </div>
 
             {/* 配置选择 */}
             <div className="space-y-2">
-              <Label className="text-foreground-secondary text-xs uppercase tracking-wider">
-                $ ASSIGNED CONFIGS
+              <Label className="flex items-center gap-2 text-xs font-medium text-foreground-secondary">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                已分配配置
               </Label>
-              <div className="max-h-32 space-y-2 overflow-y-auto rounded-2xl border border-border bg-background-secondary p-3 backdrop-blur-xl">
+              <div className="max-h-36 space-y-2 overflow-y-auto rounded-2xl border border-border bg-background-secondary/80 p-3 backdrop-blur-xl">
                 {configs.length === 0 ? (
                   <p className="text-sm text-foreground-muted font-mono">
-                    No configs available
+                    暂无可用配置
                   </p>
                 ) : (
                   configs.map((config) => (
@@ -818,9 +825,11 @@ export default function UsersPage() {
                         className="text-foreground-muted hover:text-foreground-primary transition-colors"
                       >
                         {formData.configIds.includes(config.id) ? (
-                          <span className="text-accent-success">[x]</span>
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-success text-[10px] text-white">
+                            ✓
+                          </span>
                         ) : (
-                          <span>[ ]</span>
+                          <span className="block h-5 w-5 rounded-full border border-border bg-background-tertiary" />
                         )}
                       </button>
                       <Label
@@ -831,7 +840,7 @@ export default function UsersPage() {
                         {config.name}
                         {!config.isActive && (
                           <span className="text-foreground-muted ml-2">
-                            (inactive)
+                            未启用
                           </span>
                         )}
                       </Label>
@@ -842,31 +851,38 @@ export default function UsersPage() {
             </div>
 
             {/* 封禁状态 */}
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={() =>
-                  setFormData({ ...formData, isBanned: !formData.isBanned })
-                }
-                className="text-foreground-muted hover:text-foreground-primary transition-colors"
-              >
-                {formData.isBanned ? (
-                  <span className="text-accent-error">[x]</span>
-                ) : (
-                  <span>[ ]</span>
-                )}
-              </button>
-              <Label
-                className="cursor-pointer font-mono text-sm"
-                onClick={() =>
-                  setFormData({ ...formData, isBanned: !formData.isBanned })
-                }
-              >
-                BAN USER{' '}
-                <span className="text-foreground-muted">
-                  (block all access)
-                </span>
-              </Label>
+            <div className="rounded-2xl border border-border bg-background-secondary/80 p-3 backdrop-blur-xl">
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData({ ...formData, isBanned: !formData.isBanned })
+                  }
+                  className="text-foreground-muted hover:text-foreground-primary transition-colors"
+                >
+                  {formData.isBanned ? (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-error text-[10px] text-white">
+                      ✓
+                    </span>
+                  ) : (
+                    <span className="block h-5 w-5 rounded-full border border-border bg-background-tertiary" />
+                  )}
+                </button>
+                <Label
+                  className="cursor-pointer font-mono text-sm"
+                  onClick={() =>
+                    setFormData({ ...formData, isBanned: !formData.isBanned })
+                  }
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Ban className="h-3.5 w-3.5" />
+                    封禁用户
+                  </span>{' '}
+                  <span className="text-foreground-muted">
+                    封禁后将阻止所有访问
+                  </span>
+                </Label>
+              </div>
             </div>
 
             {/* 按钮 */}
@@ -876,10 +892,10 @@ export default function UsersPage() {
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
               >
-                [ CANCEL ]
+                取消
               </Button>
               <Button type="submit">
-                {editingUser ? '[ UPDATE ]' : '[ CREATE ]'}
+                {editingUser ? '保存修改' : '创建用户'}
               </Button>
             </div>
           </form>
