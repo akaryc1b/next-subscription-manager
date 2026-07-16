@@ -4,13 +4,12 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
- * Terminal CLI Dialog Component
+ * Liquid glass dialog component
  *
  * 设计特点:
- * - 终端窗口风格
- * - ASCII 边框装饰
- * - 零圆角
- * - 发光效果
+ * - 与全局 glass-card / glass-panel 统一的圆角和毛玻璃
+ * - 柔和阴影与边框高光
+ * - 保留轻量终端标题装饰
  */
 
 const Dialog = DialogPrimitive.Root;
@@ -25,11 +24,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-overlay',
-      // 扫描线效果
-      'before:content-[""] before:fixed before:inset-0 before:pointer-events-none',
-      'before:bg-[repeating-linear-gradient(0deg,rgba(0,0,0,0.15)_0px,rgba(0,0,0,0.15)_1px,transparent_1px,transparent_2px)]',
-      'before:opacity-30',
+      'fixed inset-0 z-50 bg-overlay backdrop-blur-sm',
       // 动画
       'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out',
       className
@@ -51,10 +46,12 @@ const DialogContent = React.forwardRef<
         'fixed left-[50%] top-[50%] z-50 grid w-[calc(100vw-1.5rem)] max-w-lg sm:w-full',
         'max-h-[calc(100dvh-1.5rem)] overflow-y-auto',
         'translate-x-[-50%] translate-y-[-50%]',
-        // Terminal 窗口样式
-        'border border-border bg-background-primary',
-        // 发光效果
-        'shadow-[0_0_20px_rgba(51,255,0,0.2)]',
+        // Liquid glass window style
+        'rounded-3xl border border-border bg-background-tertiary/95 text-foreground-primary backdrop-blur-2xl',
+        // Soft app-wide glass shadow
+        'shadow-2xl shadow-black/20',
+        'before:pointer-events-none before:absolute before:inset-0 before:rounded-3xl before:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]',
+        'overflow-hidden',
         // 动画
         'data-[state=open]:animate-scale-in data-[state=closed]:animate-fade-out',
         className
@@ -62,18 +59,16 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      {/* 关闭按钮 - Terminal 风格 [x] */}
       <DialogPrimitive.Close
         className={cn(
-          'absolute right-2 top-2 p-1',
-          'text-foreground-muted hover:text-accent-error',
-          'transition-colors duration-fast',
-          'focus:outline-none focus:text-accent-error'
+          'absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full',
+          'border border-border bg-background-secondary/80 text-foreground-muted backdrop-blur-xl',
+          'hover:bg-background-hover hover:text-accent-error hover:border-border-hover',
+          'transition-all duration-fast',
+          'focus:outline-none focus-visible:ring-4 focus-visible:ring-ring'
         )}
       >
-        <span className="text-foreground-muted">[</span>
-        <X className="h-4 w-4 inline" />
-        <span className="text-foreground-muted">]</span>
+        <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -88,8 +83,8 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col space-y-1.5 p-4',
-      'border-b border-border',
+      'flex flex-col space-y-1.5 p-5 pr-14',
+      'border-b border-border bg-background-secondary/40',
       className
     )}
     {...props}
@@ -113,8 +108,8 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end',
-      'border-t border-border',
+      'flex flex-col-reverse gap-2 p-5 sm:flex-row sm:justify-end',
+      'border-t border-border bg-background-secondary/40',
       className
     )}
     {...props}
@@ -129,16 +124,15 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-medium leading-none tracking-wider uppercase',
+      'text-lg font-semibold leading-none tracking-tight uppercase',
       'text-foreground-primary',
       className
     )}
     {...props}
   >
     {/* ASCII 装饰 */}
-    <span className="text-foreground-muted mr-2">+---</span>
+    <span className="text-foreground-muted mr-2">›</span>
     {children}
-    <span className="text-foreground-muted ml-2">---+</span>
   </DialogPrimitive.Title>
 ));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
@@ -151,7 +145,7 @@ const DialogTitleSimple = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-medium leading-none tracking-wider uppercase',
+      'text-lg font-semibold leading-none tracking-tight uppercase',
       'text-foreground-primary',
       className
     )}
