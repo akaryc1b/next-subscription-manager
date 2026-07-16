@@ -30,7 +30,7 @@
 
 ### 前置要求
 
-- Node.js 18+
+- Node.js 22+
 - pnpm
 - PostgreSQL 16
 
