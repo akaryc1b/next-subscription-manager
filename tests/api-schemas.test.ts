@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict'
-import test from 'node:test'
+import { expect, test } from 'vitest'
 import { userCreateSchema, userUpdateSchema } from '../src/lib/api-schemas'
 
 test('userCreateSchema normalizes email and parses expiresAt', () => {
@@ -9,22 +8,22 @@ test('userCreateSchema normalizes email and parses expiresAt', () => {
     expiresAt: '2026-12-31T00:00:00.000Z',
   })
 
-  assert.equal(parsed.email, 'user@example.com')
-  assert.ok(parsed.expiresAt instanceof Date)
+  expect(parsed.email).toBe('user@example.com')
+  expect(parsed.expiresAt).toBeInstanceOf(Date)
 })
 
 test('userCreateSchema treats blank regular-user password as omitted', () => {
   const parsed = userCreateSchema.parse({ email: 'user@example.com', role: 'user', password: '' })
 
-  assert.equal(parsed.password, undefined)
+  expect(parsed.password).toBeUndefined()
 })
 
 test('userUpdateSchema treats blank password as omitted', () => {
   const parsed = userUpdateSchema.parse({ password: '   ' })
 
-  assert.equal(parsed.password, undefined)
+  expect(parsed.password).toBeUndefined()
 })
 
 test('userCreateSchema requires password for admins', () => {
-  assert.throws(() => userCreateSchema.parse({ email: 'admin@example.com', role: 'admin' }))
+  expect(() => userCreateSchema.parse({ email: 'admin@example.com', role: 'admin' })).toThrow()
 })
