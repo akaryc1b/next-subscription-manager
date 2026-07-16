@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { LogOut, User, Moon, Sun, Settings, Terminal, Menu } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { LogOut, User, Moon, Sun, Settings, Menu, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,42 +14,16 @@ import {
 import { authClient } from '@/lib/auth-client';
 import { useTheme } from '@/components/theme-provider';
 import { MobileSidebar } from '@/components/features/mobile-sidebar';
-
-/**
- * Terminal CLI Header Component
- *
- * 设计特点:
- * - 命令行风格状态栏
- * - 实时时间显示
- * - ASCII 风格用户菜单
- * - 移动端汉堡菜单
- */
+import { useState } from 'react';
+import { navItems } from '@/lib/nav-items';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session } = authClient.useSession();
   const { theme, toggleTheme } = useTheme();
-  const [currentTime, setCurrentTime] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // 实时时钟
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString('en-US', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-      );
-    };
-
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const current = navItems.find((item) => item.href === pathname);
 
   const handleLogout = async () => {
     await authClient.signOut();
@@ -60,95 +33,52 @@ export function Header() {
   return (
     <>
       <MobileSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-      <header className="border-b border-border bg-background-primary h-14">
-        <div className="flex h-full items-center justify-between px-4">
-          {/* 左侧 - 移动端汉堡菜单 + 命令行提示 */}
-          <div className="flex items-center gap-3 text-sm">
-            {/* 移动端汉堡菜单 */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
+      <header className="glass-panel h-16 rounded-[1.75rem] px-3">
+        <div className="flex h-full items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu className="h-4 w-4" />
             </Button>
-            
-            {/* 桌面端命令行提示 */}
-            <div className="hidden lg:flex items-center gap-1">
-              <span className="text-foreground-muted">root@okcomputer:</span>
-              <span className="text-accent-primary">~</span>
-              <span className="text-foreground-muted">#</span>
-              <span className="text-foreground-primary">
-                SUBSCRIPTION_MANAGER
-              </span>
-              <span className="terminal-cursor" />
+            <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background-tertiary text-accent-primary sm:flex">
+              {current?.icon ? <current.icon className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
             </div>
-            
-            {/* 移动端简化标题 */}
-            <div className="flex lg:hidden items-center gap-2">
-              <Terminal className="h-4 w-4 text-accent-primary" />
-              <span className="text-foreground-primary text-xs tracking-wider uppercase">
-                OKCOMPUTER
-              </span>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold sm:text-base">{current?.label || 'Dashboard'}</div>
+              <div className="hidden text-xs text-foreground-muted sm:block">Liquid Glass admin workspace</div>
             </div>
           </div>
 
-          {/* 右侧 - 控制区 */}
-          <div className="flex items-center gap-2">
-            {/* 时间显示 */}
-            <div className="text-xs text-foreground-muted font-mono mr-2 hidden sm:block">
-              <span className="text-foreground-secondary">[</span>
-              {currentTime}
-              <span className="text-foreground-secondary">]</span>
-            </div>
+          <div className="hidden min-w-48 max-w-xs flex-1 items-center gap-2 rounded-full border border-border bg-background-secondary px-3 py-2 text-sm text-foreground-muted backdrop-blur-xl md:flex">
+            <Search className="h-4 w-4" />
+            <span>Search users, configs, logs...</span>
+          </div>
 
-            {/* 主题切换 */}
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={toggleTheme}
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon-sm" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
-            {/* 用户菜单 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm">
+                <Button variant="secondary" size="icon-sm">
                   <User className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-64 rounded-3xl border-border bg-background-tertiary p-2 backdrop-blur-2xl">
                 <DropdownMenuLabel>
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="h-4 w-4 text-accent-primary" />
-                      <span className="text-foreground-primary uppercase tracking-wider">
-                        {session?.user?.name || 'USER'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-foreground-muted">
-                      {session?.user?.email}
-                    </span>
+                    <span className="font-semibold text-foreground-primary">{session?.user?.name || 'User'}</span>
+                    <span className="text-xs text-foreground-muted">{session?.user?.email}</span>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span className="uppercase tracking-wider text-sm">Settings</span>
+                  <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-accent-error focus:text-accent-error"
-                >
+                <DropdownMenuItem onClick={handleLogout} className="text-accent-error focus:text-accent-error">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span className="uppercase tracking-wider text-sm">Logout</span>
+                  <span>Logout</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

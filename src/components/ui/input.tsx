@@ -35,19 +35,17 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           type={type}
           className={cn(
             // 基础样式
-            'flex h-9 w-full bg-transparent px-3 py-2',
-            'font-mono text-sm text-foreground-primary',
-            // 边框 - Terminal 风格
+            'flex h-10 w-full rounded-2xl bg-background-secondary px-4 py-2 backdrop-blur-xl',
+            'text-sm text-foreground-primary',
             'border border-border',
             // 占位符
             'placeholder:text-foreground-placeholder',
             // 焦点状态 - 边框变亮
-            'focus-visible:outline-none focus-visible:border-foreground-primary',
-            'focus-visible:shadow-[0_0_10px_rgba(51,255,0,0.2)]',
+            'focus-visible:outline-none focus-visible:border-border-strong focus-visible:ring-4 focus-visible:ring-ring',
             // 禁用状态
             'disabled:cursor-not-allowed disabled:opacity-50',
             // 文件输入
-            'file:border-0 file:bg-transparent file:text-sm file:font-mono file:text-foreground-primary',
+            'file:border-0 file:bg-transparent file:text-sm file:text-foreground-primary',
             // 过渡
             'transition-all duration-fast',
             className

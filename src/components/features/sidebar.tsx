@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  Menu,
-  ChevronRight,
-  Terminal,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Layers3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -12,49 +8,33 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { navItems } from '@/lib/nav-items';
 
-/**
- * Terminal CLI Sidebar Component
- *
- * 设计特点:
- * - ASCII 风格导航
- * - 命令行提示符菜单项
- * - 发光效果高亮当前项
- */
-
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div
+    <aside
       className={cn(
-        'border-r border-border bg-background-secondary transition-all duration-normal',
-        'flex flex-col h-full',
-        collapsed ? 'w-16' : 'w-64'
+        'glass-panel flex h-[calc(100dvh-2rem)] flex-col rounded-[2rem] p-3',
+        collapsed ? 'w-[5.25rem]' : 'w-72'
       )}
     >
-      {/* 头部 - Logo 区域 */}
-      <div className="flex h-14 items-center border-b border-border px-3 gap-2">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="shrink-0"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
+      <div className="flex items-center gap-3 px-2 py-2">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent-primary text-white shadow-lg">
+          <Layers3 className="h-5 w-5" />
+        </div>
         {!collapsed && (
-          <div className="flex items-center gap-2 overflow-hidden">
-            <Terminal className="h-5 w-5 text-accent-primary shrink-0" />
-            <span className="text-sm font-medium tracking-wider uppercase truncate">
-              Subscription
-            </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold tracking-tight">Subscription Manager</div>
+            <div className="text-xs text-foreground-muted">macOS Admin Console</div>
           </div>
         )}
+        <Button variant="ghost" size="icon-sm" onClick={() => setCollapsed(!collapsed)}>
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
 
-      {/* 导航菜单 */}
-      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+      <nav className="mt-5 flex-1 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -63,66 +43,34 @@ export function Sidebar() {
             <Link key={item.href} href={item.href}>
               <div
                 className={cn(
-                  'group flex items-center gap-3 px-3 py-2 transition-all duration-fast',
-                  // 激活状态 - 反色 + 发光
+                  'group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium',
                   isActive
-                    ? 'bg-foreground-primary text-background-primary shadow-[0_0_10px_rgba(51,255,0,0.3)]'
-                    : 'text-foreground-secondary hover:text-foreground-primary hover:bg-background-hover'
+                    ? 'bg-accent-primary text-white shadow-lg'
+                    : 'text-foreground-secondary hover:bg-background-hover hover:text-foreground-primary',
+                  collapsed && 'justify-center px-0'
                 )}
               >
-                {/* 提示符 */}
-                {isActive && !collapsed && (
-                  <span className="text-background-primary">{'>'}</span>
-                )}
-                {!isActive && !collapsed && (
-                  <span className="text-foreground-muted group-hover:text-foreground-secondary">
-                    {'$'}
-                  </span>
-                )}
-
-                {/* 图标 */}
-                <Icon
-                  className={cn(
-                    'h-4 w-4 shrink-0',
-                    isActive ? 'text-background-primary' : ''
-                  )}
-                />
-
-                {/* 文字 */}
-                {!collapsed && (
-                  <span className="text-sm tracking-wider truncate">
-                    {item.label}
-                  </span>
-                )}
-
-                {/* 激活指示器 */}
-                {isActive && !collapsed && (
-                  <ChevronRight className="h-4 w-4 ml-auto text-background-primary" />
-                )}
+                <Icon className="h-4 w-4 shrink-0" />
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </div>
             </Link>
           );
         })}
       </nav>
 
-      {/* 底部状态栏 */}
-      <div className="border-t border-border p-2">
+      <div className="rounded-3xl border border-border bg-background-secondary p-3 text-xs text-foreground-muted">
         {!collapsed ? (
-          <div className="px-3 py-2 text-xs text-foreground-muted space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-accent-success">●</span>
-              <span>SYSTEM ONLINE</span>
+          <>
+            <div className="flex items-center gap-2 font-medium text-foreground-primary">
+              <span className="h-2 w-2 rounded-full bg-accent-success shadow-[0_0_16px_var(--color-accent-success)]" />
+              System online
             </div>
-            <div className="text-foreground-placeholder">
-              v2.2.0 | Terminal Mode
-            </div>
-          </div>
+            <div className="mt-1">Liquid Glass UI</div>
+          </>
         ) : (
-          <div className="flex justify-center py-2">
-            <span className="text-accent-success text-xs">●</span>
-          </div>
+          <div className="mx-auto h-2 w-2 rounded-full bg-accent-success" />
         )}
       </div>
-    </div>
+    </aside>
   );
 }

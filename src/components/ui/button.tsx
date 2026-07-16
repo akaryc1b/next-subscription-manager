@@ -3,101 +3,53 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-/**
- * Terminal CLI Button Component
- *
- * 设计特点:
- * - 使用方括号包裹文字: [ BUTTON ]
- * - Hover 时反色 (inverted video)
- * - 零圆角
- * - 文字发光效果
- */
-
 const buttonVariants = cva(
-  // 基础样式
   [
-    'inline-flex items-center justify-center gap-2',
-    'whitespace-nowrap font-mono uppercase tracking-wider',
-    'transition-all duration-fast',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+    'inline-flex items-center justify-center gap-2 whitespace-nowrap',
+    'rounded-full font-medium tracking-tight',
+    'transition-all duration-fast active:scale-[0.98]',
+    'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring',
     'disabled:pointer-events-none disabled:opacity-50',
     '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-    // 文字发光
-    'text-shadow-[0_0_5px_var(--color-foreground-primary)]',
   ].join(' '),
   {
     variants: {
       variant: {
-        // 主要按钮 - 反色效果
         primary: [
-          'bg-foreground-primary text-background-primary',
-          'hover:bg-accent-primaryHover',
-          'active:bg-accent-primaryActive',
-          'border border-foreground-primary',
+          'border border-accent-primary bg-accent-primary text-white shadow-lg',
+          'hover:bg-accent-primaryHover hover:shadow-xl',
         ].join(' '),
-
-        // 次要按钮 - 轮廓
         secondary: [
-          'bg-transparent text-foreground-primary',
-          'border border-border',
-          'hover:bg-foreground-primary hover:text-background-primary',
-          'active:bg-accent-primaryActive active:text-background-primary',
+          'border border-border bg-background-tertiary text-foreground-primary backdrop-blur-xl',
+          'hover:bg-background-hover hover:border-border-hover',
         ].join(' '),
-
-        // 轮廓按钮
         outline: [
-          'bg-transparent text-foreground-primary',
-          'border border-foreground-primary',
-          'hover:bg-foreground-primary hover:text-background-primary',
-          'active:bg-accent-primaryActive',
+          'border border-border bg-background-secondary text-foreground-primary backdrop-blur-xl',
+          'hover:bg-background-hover hover:border-border-hover',
         ].join(' '),
-
-        // 幽灵按钮
         ghost: [
-          'bg-transparent text-foreground-primary',
-          'border border-transparent',
-          'hover:border-border hover:bg-background-hover',
-          'active:bg-background-active',
+          'border border-transparent bg-transparent text-foreground-secondary',
+          'hover:bg-background-hover hover:text-foreground-primary',
         ].join(' '),
-
-        // 危险按钮
         destructive: [
-          'bg-accent-error text-background-primary',
-          'border border-accent-error',
+          'border border-accent-error bg-accent-error text-white shadow-lg',
           'hover:bg-accent-errorHover',
-          'text-shadow-[0_0_5px_var(--color-accent-error)]',
         ].join(' '),
-
-        // 成功按钮
         success: [
-          'bg-accent-success text-background-primary',
-          'border border-accent-success',
+          'border border-accent-success bg-accent-success text-white shadow-lg',
           'hover:bg-accent-successHover',
         ].join(' '),
-
-        // 警告按钮
         warning: [
-          'bg-accent-warning text-background-primary',
-          'border border-accent-warning',
+          'border border-accent-warning bg-accent-warning text-white shadow-lg',
           'hover:bg-accent-warningHover',
-          'text-shadow-[0_0_5px_var(--color-accent-warning)]',
         ].join(' '),
-
-        // 链接样式
         link: [
-          'text-foreground-primary underline-offset-4',
+          'h-auto rounded-none border-none bg-transparent p-0 text-accent-primary underline-offset-4',
           'hover:underline hover:text-accent-primaryHover',
-          'border-none bg-transparent',
         ].join(' '),
-
-        // Terminal 特殊样式 - 括号按钮
         terminal: [
-          'bg-transparent text-foreground-primary',
-          'border-none',
-          'hover:text-accent-primaryHover',
-          'before:content-["[_"] after:content-["_]"]',
-          'before:text-foreground-muted after:text-foreground-muted',
-          'hover:before:text-foreground-primary hover:after:text-foreground-primary',
+          'border border-border bg-background-secondary text-foreground-primary backdrop-blur-xl',
+          'hover:bg-background-hover hover:border-border-hover',
         ].join(' '),
       },
       size: {
