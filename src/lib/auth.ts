@@ -3,9 +3,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { passkey } from '@better-auth/passkey'
 import { prisma } from './prisma'
 
-const authBaseUrl = process.env.BETTER_AUTH_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  'http://localhost:3000'
+const authBaseUrl = process.env.BETTER_AUTH_URL || 'http://localhost:3000'
 
 const trustedOrigins = Array.from(new Set([
   authBaseUrl,

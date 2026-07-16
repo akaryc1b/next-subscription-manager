@@ -31,10 +31,6 @@ COPY . .
 # Ensure public directory exists
 RUN mkdir -p ./public
 
-# Build-time environment variables for Next.js
-ARG NEXT_PUBLIC_APP_URL
-ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
-
 # Build Next.js
 RUN pnpm build
 
