@@ -769,7 +769,7 @@ export default function UsersPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
-                className="flex h-10 w-full border border-border bg-background-primary px-3 py-2 text-sm text-foreground-primary font-mono transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary focus-visible:border-accent-primary"
+                className="flex h-10 w-full rounded-2xl border border-border bg-background-secondary px-4 py-2 text-sm text-foreground-primary font-mono transition-all duration-fast focus-visible:outline-none focus-visible:border-border-strong focus-visible:ring-4 focus-visible:ring-ring"
               >
                 <option value="user">[USER] Regular User</option>
                 <option value="admin">[ADMIN] Administrator</option>
@@ -801,7 +801,7 @@ export default function UsersPage() {
               <Label className="text-foreground-secondary text-xs uppercase tracking-wider">
                 $ ASSIGNED CONFIGS
               </Label>
-              <div className="border border-border p-3 max-h-32 overflow-y-auto space-y-2 bg-background-secondary">
+              <div className="max-h-32 space-y-2 overflow-y-auto rounded-2xl border border-border bg-background-secondary p-3 backdrop-blur-xl">
                 {configs.length === 0 ? (
                   <p className="text-sm text-foreground-muted font-mono">
                     No configs available
@@ -896,13 +896,13 @@ export default function UsersPage() {
             {subscriptionUser && (
               <>
                 {/* 用户信息 */}
-                <div className="border border-border p-3 bg-background-secondary font-mono text-sm">
+                <div className="rounded-2xl border border-border bg-background-secondary p-3 font-mono text-sm backdrop-blur-xl">
                   <div className="text-foreground-muted text-xs uppercase mb-1">USER</div>
                   <div className="text-accent-info">{subscriptionUser.email}</div>
                 </div>
 
                 {/* 当前访问统计 */}
-                <div className="border border-border p-3 bg-background-secondary font-mono text-sm">
+                <div className="rounded-2xl border border-border bg-background-secondary p-3 font-mono text-sm backdrop-blur-xl">
                   <div className="text-foreground-muted text-xs uppercase mb-1">CURRENT ACCESS</div>
                   <div className="text-foreground-primary">
                     {subscriptionUser.subscription?.accessCount ?? 0} / {subscriptionUser.subscription?.maxAccess === 0 ? '∞' : (subscriptionUser.subscription?.maxAccess ?? 20)}
@@ -929,7 +929,7 @@ export default function UsersPage() {
                 </div>
 
                 {/* 重置按钮 */}
-                <div className="border border-accent-warning/30 bg-accent-warning/5 p-3">
+                <div className="rounded-2xl border border-accent-warning/30 bg-accent-warning/5 p-3">
                   <div className="flex items-center gap-2 text-accent-warning text-sm font-mono mb-2">
                     <AlertTriangle className="h-4 w-4" />
                     <span>DANGER ZONE</span>
