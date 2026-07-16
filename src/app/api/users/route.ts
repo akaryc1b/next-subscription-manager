@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       return createdUser
     })
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = process.env.BETTER_AUTH_URL || request.nextUrl.origin
     const activationLink = !isAdmin && user.activationToken
       ? `${baseUrl}/activate?token=${user.activationToken.token}`
       : null

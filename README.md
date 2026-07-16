@@ -57,7 +57,6 @@ cp .env.example .env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/subscription_db"
 BETTER_AUTH_SECRET="your-random-secret-key"
 BETTER_AUTH_URL="http://localhost:3000"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # GitHub OAuth (可选)
 GITHUB_CLIENT_ID="your-github-client-id"

@@ -46,7 +46,7 @@ export async function POST(
     })
 
     // 生成订阅链接
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = process.env.BETTER_AUTH_URL || request.nextUrl.origin
     const subscriptionLink = `${baseUrl}/api/sub/${newToken}`
 
     return NextResponse.json({
