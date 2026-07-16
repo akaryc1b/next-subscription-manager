@@ -28,7 +28,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [config, setConfig] = useState<ThemeConfig>({ mode: 'dark', style: 'terminal' });
+  const [config, setConfig] = useState<ThemeConfig>({ mode: 'dark', style: 'modern' });
   const [mounted, setMounted] = useState(false);
 
   // 初始化主题
@@ -38,7 +38,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     const initialConfig: ThemeConfig = savedConfig || {
       mode: savedTheme || getSystemTheme(),
-      style: 'terminal',
+      style: 'modern',
     };
 
     setConfig(initialConfig);

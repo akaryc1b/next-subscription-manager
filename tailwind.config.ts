@@ -47,6 +47,7 @@ const config: Config = {
         },
         accent: {
           primary: 'var(--color-accent-primary)',
+          foreground: 'var(--color-accent-foreground)',
           primaryHover: 'var(--color-accent-primaryHover)',
           primaryActive: 'var(--color-accent-primaryActive)',
           success: 'var(--color-accent-success)',

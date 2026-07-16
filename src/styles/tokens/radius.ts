@@ -30,15 +30,15 @@ const modernRadius = {
 export const radius = {
   terminal: terminalRadius,
   modern: modernRadius,
-  // 默认使用 Terminal
+  // 默认使用 Liquid Glass 圆角
   none: '0',
-  sm: '0',
-  md: '0',
-  lg: '0',
-  xl: '0',
-  '2xl': '0',
-  '3xl': '0',
-  full: '0',
+  sm: modernRadius.sm,
+  md: modernRadius.md,
+  lg: modernRadius.lg,
+  xl: modernRadius.xl,
+  '2xl': modernRadius['2xl'],
+  '3xl': modernRadius['3xl'],
+  full: modernRadius.full,
 } as const;
 
 export type RadiusSize = keyof typeof radius;
