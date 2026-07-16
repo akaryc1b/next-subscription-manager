@@ -33,10 +33,10 @@ export function Header() {
   return (
     <>
       <MobileSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-      <header className="glass-panel h-16 rounded-[1.75rem] px-3">
-        <div className="flex h-full items-center justify-between gap-3">
+      <header className="glass-panel sticky top-2 z-30 h-14 rounded-[1.5rem] px-2 sm:h-16 sm:rounded-[1.75rem] sm:px-3 lg:static">
+        <div className="flex h-full items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <Button variant="ghost" size="icon-sm" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+            <Button variant="ghost" size="icon-sm" className="h-10 w-10 lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open navigation menu">
               <Menu className="h-4 w-4" />
             </Button>
             <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background-tertiary text-accent-primary sm:flex">
@@ -45,6 +45,7 @@ export function Header() {
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold sm:text-base">{current?.label || 'Dashboard'}</div>
               <div className="hidden text-xs text-foreground-muted sm:block">Liquid Glass admin workspace</div>
+              <div className="text-[11px] text-foreground-muted sm:hidden">Admin workspace</div>
             </div>
           </div>
 
@@ -53,14 +54,14 @@ export function Header() {
             <span>Search users, configs, logs...</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon-sm" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <Button variant="ghost" size="icon-sm" className="h-10 w-10" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon-sm">
+                <Button variant="secondary" size="icon-sm" className="h-10 w-10">
                   <User className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

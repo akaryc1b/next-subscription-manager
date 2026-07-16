@@ -25,15 +25,15 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] overflow-hidden p-3 lg:p-4">
-      <div className="liquid-orb left-[-8rem] top-[-8rem] h-80 w-80 bg-background-active" />
-      <div className="liquid-orb bottom-[-10rem] right-[-6rem] h-96 w-96 bg-background-active" />
-      <div className="hidden lg:block relative z-10">
+    <div className="relative flex min-h-[100dvh] overflow-hidden px-2 py-2 sm:px-3 lg:p-4">
+      <div className="liquid-orb left-[-10rem] top-[-9rem] h-72 w-72 bg-background-active sm:h-80 sm:w-80" />
+      <div className="liquid-orb bottom-[-10rem] right-[-8rem] h-80 w-80 bg-background-active sm:h-96 sm:w-96" />
+      <div className="hidden lg:relative lg:z-10 lg:block">
         <Sidebar />
       </div>
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-3 lg:gap-4 lg:pl-4">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 lg:pl-4">
         <Header />
-        <main className="flex-1 overflow-y-auto rounded-[2rem] border border-border bg-background-secondary p-4 backdrop-blur-2xl lg:p-6">
+        <main className="flex-1 overflow-y-auto rounded-[1.5rem] border border-border bg-background-secondary p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-2xl sm:rounded-[2rem] sm:p-4 lg:p-6">
           {children}
         </main>
       </div>

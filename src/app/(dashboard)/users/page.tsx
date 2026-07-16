@@ -386,7 +386,7 @@ export default function UsersPage() {
   const renderUserCard = (user: User, index: number) => {
     const status = getUserStatusLabel(user);
     return (
-      <div className="border border-border bg-background-secondary p-3 space-y-3 sm:p-4">
+      <div className="space-y-3 rounded-3xl border border-border bg-background-secondary p-4 shadow-lg backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -402,18 +402,18 @@ export default function UsersPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-1">
-            <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)} className="w-full sm:w-8">
+            <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)} className="h-10 w-full rounded-2xl sm:h-8 sm:w-8" aria-label={user.isActive ? 'Deactivate user' : 'Activate user'}>
               <Power className={`h-4 w-4 ${user.isActive ? 'text-accent-success' : 'text-foreground-muted'}`} />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)} className="w-full sm:w-8">
+            <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)} className="h-10 w-full rounded-2xl sm:h-8 sm:w-8" aria-label="Edit user">
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(user.id)} className="w-full hover:text-accent-error sm:w-8">
+            <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(user.id)} className="h-10 w-full rounded-2xl hover:text-accent-error sm:h-8 sm:w-8" aria-label="Delete user">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 text-xs font-mono min-[380px]:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border bg-background-tertiary p-3 text-xs font-mono min-[380px]:grid-cols-2">
           <div>
             <span className="text-foreground-muted">ROLE: </span>
             <span className={user.role === 'admin' ? 'text-accent-warning' : 'text-foreground-secondary'}>
@@ -426,7 +426,7 @@ export default function UsersPage() {
               {user.expiresAt ? formatDate(user.expiresAt) : 'PERMANENT'}
             </span>
           </div>
-          <div className="col-span-2">
+          <div className="min-[380px]:col-span-2">
             <span className="text-foreground-muted">CREATED: </span>
             <span className="text-foreground-secondary">{formatDate(user.createdAt)}</span>
           </div>
@@ -439,12 +439,12 @@ export default function UsersPage() {
                 {user.subscription.accessCount}/{user.subscription.maxAccess === 0 ? '∞' : user.subscription.maxAccess}
               </span>
             </div>
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-[1fr_1fr_auto]">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => copySubscriptionLink(user.subscription!.token, user.id)}
-                className="h-8 min-w-0 px-2"
+                className="h-10 min-w-0 rounded-2xl px-2 min-[380px]:h-8"
               >
                 {copySuccess === user.id ? (
                   <><Check className="h-3 w-3 mr-1 text-accent-success" /><span className="text-accent-success text-xs">COPIED</span></>
@@ -456,7 +456,7 @@ export default function UsersPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => copyShadowrocketLink(user.subscription!.token, user.id)}
-                className="h-8 min-w-0 px-2"
+                className="h-10 min-w-0 rounded-2xl px-2 min-[380px]:h-8"
                 title="Copy Shadowrocket subscription link"
               >
                 {copyRocketSuccess === user.id ? (
@@ -470,7 +470,7 @@ export default function UsersPage() {
                 size="icon-sm"
                 onClick={() => openSubscriptionDialog(user)}
                 title="订阅设置"
-                className="h-8 w-8"
+                className="h-10 w-full rounded-2xl min-[380px]:h-8 min-[380px]:w-8"
               >
                 <Settings2 className="h-3 w-3" />
               </Button>
@@ -574,11 +574,11 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-4 p-3 sm:p-4 lg:space-y-6 lg:p-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* 头部 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-border bg-background-tertiary p-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:rounded-[2rem]">
         <div>
-          <h1 className="text-lg font-bold tracking-wider uppercase flex items-center gap-2 sm:text-xl lg:text-2xl">
+          <h1 className="flex items-center gap-2 text-lg font-bold uppercase tracking-wider sm:text-xl lg:text-2xl">
             <span className="text-foreground-muted">{'>'}</span>
             USER MANAGEMENT
           </h1>
@@ -597,14 +597,14 @@ export default function UsersPage() {
             variant="outline"
             size="sm"
             disabled={refreshing}
-            className="w-full sm:w-auto"
+            className="h-10 w-full sm:h-8 sm:w-auto"
           >
             <RefreshCw
               className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} sm:mr-2`}
             />
             <span>REFRESH</span>
           </Button>
-          <Button onClick={openCreateDialog} size="sm" className="w-full sm:w-auto">
+          <Button onClick={openCreateDialog} size="sm" className="h-10 w-full sm:h-8 sm:w-auto">
             <Plus className="h-4 w-4 sm:mr-2" />
             <span>ADD USER</span>
           </Button>
@@ -612,25 +612,25 @@ export default function UsersPage() {
       </div>
 
       {/* 搜索栏 */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground-muted" />
+      <div className="relative rounded-[1.5rem] border border-border bg-background-tertiary p-2 backdrop-blur-xl">
+        <Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
         <Input
           type="text"
           placeholder="Search email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-10 font-mono text-sm"
+          className="h-11 border-transparent bg-background-secondary pl-10 pr-10 font-mono text-sm"
         />
         {searchTerm && (
           <button
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground-muted hover:text-foreground-primary transition-colors"
+            className="absolute right-5 top-1/2 -translate-y-1/2 text-foreground-muted transition-colors hover:text-foreground-primary"
           >
             <X className="h-4 w-4" />
           </button>
         )}
         {searching && (
-          <div className="absolute right-10 top-1/2 -translate-y-1/2">
+          <div className="absolute right-12 top-1/2 -translate-y-1/2">
             <RefreshCw className="h-4 w-4 animate-spin text-accent-primary" />
           </div>
         )}
@@ -972,7 +972,7 @@ export default function UsersPage() {
       </Dialog>
 
       {/* 底部状态栏 */}
-      <div className="border border-border p-3 font-mono text-xs">
+      <div className="rounded-3xl border border-border bg-background-tertiary p-3 font-mono text-xs backdrop-blur-xl">
         <div className="flex flex-wrap items-center gap-2 text-foreground-muted">
           <span className="text-accent-success">●</span>
           <span className="hidden sm:inline">DATABASE STATUS: CONNECTED</span>
