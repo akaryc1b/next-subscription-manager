@@ -8,6 +8,25 @@ function parseDate(value: string | null) {
   return Number.isNaN(date.getTime()) ? undefined : date
 }
 
+function latestDate(...dates: Array<Date | undefined>) {
+  const validDates = dates.filter((date): date is Date => Boolean(date))
+  if (validDates.length === 0) return undefined
+
+  return new Date(Math.max(...validDates.map((date) => date.getTime())))
+}
+
+function buildAccessDateWhere(from?: Date, to?: Date) {
+  return from || to
+    ? { accessedAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+    : {}
+}
+
+function buildSecurityDateWhere(from?: Date, to?: Date) {
+  return from || to
+    ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+    : {}
+}
+
 export async function GET(request: NextRequest) {
   try {
     const adminGuard = await requireAdmin(request)
@@ -20,8 +39,10 @@ export async function GET(request: NextRequest) {
     const today = new Date(now)
     today.setHours(0, 0, 0, 0)
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    const scopedDate = from || to ? { accessedAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}
-    const scopedSecurityDate = from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}
+    const scopedDate = buildAccessDateWhere(from, to)
+    const scopedSecurityDate = buildSecurityDateWhere(from, to)
+    const todayDate = buildAccessDateWhere(latestDate(today, from), to)
+    const last24hDate = buildAccessDateWhere(latestDate(last24h, from), to)
 
     const [
       userCount,
@@ -40,8 +61,8 @@ export async function GET(request: NextRequest) {
       prisma.subscription.count(),
       prisma.accessLog.count({ where: scopedDate }),
       prisma.securityEvent.count({ where: scopedSecurityDate }),
-      prisma.accessLog.count({ where: { accessedAt: { gte: today } } }),
-      prisma.accessLog.count({ where: { accessedAt: { gte: last24h } } }),
+      prisma.accessLog.count({ where: todayDate }),
+      prisma.accessLog.count({ where: last24hDate }),
       prisma.securityEvent.count({ where: { severity: 'critical', ...scopedSecurityDate } }),
       prisma.securityEvent.count({ where: { severity: 'warning', ...scopedSecurityDate } }),
       prisma.accessLog.groupBy({ by: ['ipAddress'], where: scopedDate }),

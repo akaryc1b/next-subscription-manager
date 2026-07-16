@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AccessLogView, MonitorFilters, MonitorStats, SecurityEventView } from '@/types/monitor';
 
 interface MonitorResponse<T> {
@@ -45,9 +45,17 @@ export function useMonitorData(filters: MonitorFilters, autoRefresh: boolean, re
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const queryKey = useMemo(() => JSON.stringify(filters), [filters]);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestSequenceRef = useRef(0);
 
   const fetchData = useCallback(async () => {
+    abortControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const requestSequence = requestSequenceRef.current + 1;
+    requestSequenceRef.current = requestSequence;
+
     setRefreshing(true);
     setError(null);
 
@@ -68,32 +76,43 @@ export function useMonitorData(filters: MonitorFilters, autoRefresh: boolean, re
       if (filters.securityIp) securityParams.set('ip', filters.securityIp);
 
       const [statsData, logsData, securityData] = await Promise.all([
-        fetch(`/api/stats?${statsParams.toString()}`).then(readJson<MonitorStats>),
-        fetch(`/api/logs?${logsParams.toString()}`).then(readJson<AccessLogView>),
-        fetch(`/api/security-events?${securityParams.toString()}`).then(readJson<SecurityEventView>),
+        fetch(`/api/stats?${statsParams.toString()}`, { signal: controller.signal }).then(readJson<MonitorStats>),
+        fetch(`/api/logs?${logsParams.toString()}`, { signal: controller.signal }).then(readJson<AccessLogView>),
+        fetch(`/api/security-events?${securityParams.toString()}`, { signal: controller.signal }).then(readJson<SecurityEventView>),
       ]);
+
+      if (requestSequenceRef.current !== requestSequence || controller.signal.aborted) return;
 
       setStats(statsData.stats || defaultStats);
       setLogs(logsData.logs || []);
       setSecurityEvents(securityData.events || []);
       setLastUpdated(new Date());
     } catch (err) {
+      if (requestSequenceRef.current !== requestSequence) return;
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+
       setError(err instanceof Error ? err.message : 'Failed to refresh monitoring data');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (requestSequenceRef.current === requestSequence && !controller.signal.aborted) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [filters]);
 
   useEffect(() => {
     void fetchData();
-  }, [fetchData, queryKey]);
+  }, [fetchData]);
 
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = window.setInterval(() => void fetchData(), refreshInterval * 1000);
     return () => window.clearInterval(interval);
   }, [autoRefresh, fetchData, refreshInterval]);
+
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, []);
 
   return { stats, logs, securityEvents, loading, refreshing, error, lastUpdated, refresh: fetchData };
 }
