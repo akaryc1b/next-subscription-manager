@@ -46,6 +46,31 @@ interface Config {
   };
 }
 
+type PaginatedResponse<T> = {
+  [key: string]: T[] | { page: number; pageSize: number; total: number; pageCount: number } | undefined;
+  pagination?: { page: number; pageSize: number; total: number; pageCount: number };
+};
+
+async function fetchAllPages<T>(basePath: string, collectionKey: string, params: Record<string, string> = {}): Promise<T[]> {
+  const pageSize = 100;
+  let page = 1;
+  let pageCount = 1;
+  const items: T[] = [];
+
+  do {
+    const searchParams = new URLSearchParams({ ...params, page: String(page), pageSize: String(pageSize) });
+    const res = await fetch(`${basePath}?${searchParams.toString()}`);
+    if (!res.ok) throw new Error(`Failed to fetch ${collectionKey}`);
+
+    const data = await res.json() as PaginatedResponse<T>;
+    items.push(...((data[collectionKey] as T[] | undefined) || []));
+    pageCount = data.pagination?.pageCount || 1;
+    page += 1;
+  } while (page <= pageCount);
+
+  return items;
+}
+
 // 计算配置内容统计
 function getContentStats(content: string): { lines: number; bytes: number } {
   const lines = content.split('\n').length;
@@ -78,9 +103,8 @@ export default function ConfigsPage() {
   const fetchConfigs = async () => {
     setRefreshing(true);
     try {
-      const res = await fetch('/api/configs?includeContent=true');
-      const data = await res.json();
-      setConfigs(data.configs);
+      const allConfigs = await fetchAllPages<Config>('/api/configs', 'configs', { includeContent: 'true' });
+      setConfigs(allConfigs);
     } catch (err) {
       setError('Failed to fetch configs');
     } finally {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { userCreateSchema } from '../src/lib/api-schemas'
+import { userCreateSchema, userUpdateSchema } from '../src/lib/api-schemas'
 
 test('userCreateSchema normalizes email and parses expiresAt', () => {
   const parsed = userCreateSchema.parse({
@@ -11,6 +11,18 @@ test('userCreateSchema normalizes email and parses expiresAt', () => {
 
   assert.equal(parsed.email, 'user@example.com')
   assert.ok(parsed.expiresAt instanceof Date)
+})
+
+test('userCreateSchema treats blank regular-user password as omitted', () => {
+  const parsed = userCreateSchema.parse({ email: 'user@example.com', role: 'user', password: '' })
+
+  assert.equal(parsed.password, undefined)
+})
+
+test('userUpdateSchema treats blank password as omitted', () => {
+  const parsed = userUpdateSchema.parse({ password: '   ' })
+
+  assert.equal(parsed.password, undefined)
 })
 
 test('userCreateSchema requires password for admins', () => {

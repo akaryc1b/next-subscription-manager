@@ -16,9 +16,14 @@ export const optionalNullableDateSchema = z.preprocess(value => {
 
 export const userRoleSchema = z.enum(['user', 'admin'])
 
+const optionalPasswordSchema = z.preprocess(value => {
+  if (typeof value === 'string' && value.trim() === '') return undefined
+  return value
+}, z.string().min(1, '密码不能为空').optional())
+
 export const userCreateSchema = z.object({
   email: z.email('邮箱格式无效').trim().toLowerCase(),
-  password: z.string().min(1, '密码不能为空').optional(),
+  password: optionalPasswordSchema,
   role: userRoleSchema.default('user'),
   expiresAt: optionalNullableDateSchema,
   configIds: z.array(z.uuid('配置 ID 无效')).default([]),
@@ -30,7 +35,7 @@ export const userCreateSchema = z.object({
 
 export const userUpdateSchema = z.object({
   email: z.email('邮箱格式无效').trim().toLowerCase().optional(),
-  password: z.string().min(1, '密码不能为空').optional(),
+  password: optionalPasswordSchema,
   role: userRoleSchema.optional(),
   isActive: z.boolean().optional(),
   isBanned: z.boolean().optional(),

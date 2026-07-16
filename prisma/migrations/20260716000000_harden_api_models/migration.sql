@@ -27,7 +27,7 @@ ALTER TABLE "configs" ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE "configs" ADD COLUMN "is_validated" BOOLEAN NOT NULL DEFAULT false;
 CREATE UNIQUE INDEX "configs_user_id_name_key" ON "configs"("user_id", "name");
 
-ALTER TABLE "access_logs" ALTER COLUMN "user_agent" TYPE VARCHAR(512);
+ALTER TABLE "access_logs" ALTER COLUMN "user_agent" TYPE VARCHAR(512) USING left("user_agent", 512);
 CREATE INDEX "access_logs_subscription_id_accessed_at_idx" ON "access_logs"("subscription_id", "accessed_at");
 CREATE INDEX "access_logs_accessed_at_idx" ON "access_logs"("accessed_at");
 
@@ -35,7 +35,7 @@ ALTER TABLE "security_events" ALTER COLUMN "type" TYPE "SecurityEventType" USING
 ALTER TABLE "security_events" ALTER COLUMN "severity" DROP DEFAULT;
 ALTER TABLE "security_events" ALTER COLUMN "severity" TYPE "SecuritySeverity" USING "severity"::"SecuritySeverity";
 ALTER TABLE "security_events" ALTER COLUMN "severity" SET DEFAULT 'info';
-ALTER TABLE "security_events" ALTER COLUMN "user_agent" TYPE VARCHAR(512);
+ALTER TABLE "security_events" ALTER COLUMN "user_agent" TYPE VARCHAR(512) USING left("user_agent", 512);
 
 DROP INDEX IF EXISTS "passkey_credentialID_idx";
 CREATE UNIQUE INDEX "passkey_credentialID_key" ON "passkey"("credentialID");
