@@ -47,11 +47,10 @@ const DialogContent = React.forwardRef<
         'max-h-[calc(100dvh-1.5rem)] overflow-y-auto',
         'translate-x-[-50%] translate-y-[-50%]',
         // Liquid glass window style
-        'rounded-3xl border border-border bg-background-tertiary/95 text-foreground-primary backdrop-blur-2xl',
+        'relative rounded-3xl border border-border bg-background-tertiary text-foreground-primary backdrop-blur-2xl',
         // Soft app-wide glass shadow
         'shadow-2xl shadow-black/20',
         'before:pointer-events-none before:absolute before:inset-0 before:rounded-3xl before:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]',
-        'overflow-hidden',
         // 动画
         'data-[state=open]:animate-scale-in data-[state=closed]:animate-fade-out',
         className
@@ -62,7 +61,7 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Close
         className={cn(
           'absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full',
-          'border border-border bg-background-secondary/80 text-foreground-muted backdrop-blur-xl',
+          'border border-border bg-background-secondary text-foreground-muted backdrop-blur-xl',
           'hover:bg-background-hover hover:text-accent-error hover:border-border-hover',
           'transition-all duration-fast',
           'focus:outline-none focus-visible:ring-4 focus-visible:ring-ring'
@@ -84,7 +83,7 @@ const DialogHeader = ({
   <div
     className={cn(
       'flex flex-col space-y-1.5 p-5 pr-14',
-      'border-b border-border bg-background-secondary/40',
+      'border-b border-border bg-background-secondary',
       className
     )}
     {...props}
@@ -109,7 +108,7 @@ const DialogFooter = ({
   <div
     className={cn(
       'flex flex-col-reverse gap-2 p-5 sm:flex-row sm:justify-end',
-      'border-t border-border bg-background-secondary/40',
+      'border-t border-border bg-background-secondary',
       className
     )}
     {...props}
