@@ -16,7 +16,9 @@ COPY prisma ./prisma
 
 # Install ALL dependencies (including dev tools needed during build)
 RUN pnpm install --frozen-lockfile
-RUN pnpm db:generate
+# Prisma may skip node_modules/.prisma for client-engine builds, but Docker COPY
+# requires the path to exist when we copy generated artifacts into runner.
+RUN pnpm db:generate && mkdir -p node_modules/.prisma
 
 # Rebuild the source code only when needed
 FROM base AS builder
