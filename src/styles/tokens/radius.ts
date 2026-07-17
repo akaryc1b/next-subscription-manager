@@ -30,7 +30,7 @@ const modernRadius = {
 export const radius = {
   terminal: terminalRadius,
   modern: modernRadius,
-  // 默认使用 Liquid Glass 圆角
+  // 默认使用较大的面板圆角
   none: '0',
   sm: modernRadius.sm,
   md: modernRadius.md,

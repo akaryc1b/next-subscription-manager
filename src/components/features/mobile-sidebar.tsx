@@ -25,7 +25,7 @@ export function MobileSidebar({ open, onOpenChange }: MobileSidebarProps) {
           </div>
           <div>
             <div className="text-sm font-semibold">Subscription Manager</div>
-            <div className="text-xs text-foreground-muted">macOS Admin Console</div>
+            <div className="text-xs text-foreground-muted">Admin Console</div>
           </div>
         </div>
 

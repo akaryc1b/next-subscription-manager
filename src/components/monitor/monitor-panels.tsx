@@ -1,7 +1,7 @@
 'use client';
 
 import type * as React from 'react';
-import { Activity, AlertTriangle, Clock, Eye, FileText, Filter, Globe, Link as LinkIcon, RefreshCw, Search, ShieldAlert, Sparkles, Users } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, Eye, FileText, Filter, Globe, Link as LinkIcon, RefreshCw, Search, ShieldAlert, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,9 @@ export function MonitorHeader({ refreshing, autoRefresh, refreshInterval, lastUp
       <div className="absolute right-8 top-6 h-24 w-24 rounded-full bg-accent-primary/20 blur-3xl" />
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-background-secondary px-3 py-1 text-xs font-medium text-foreground-secondary backdrop-blur-xl">
-            <Sparkles className="h-3.5 w-3.5 text-accent-primary" />
-            Liquid Glass monitoring workspace
-          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground-primary lg:text-3xl">Monitoring Center</h1>
           <p className="mt-2 max-w-2xl text-sm text-foreground-secondary">
-            Observe subscription traffic, security signals, active filters, and service health from one glass surface.
+            Observe subscription traffic, security signals, active filters, and service health from one dashboard.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

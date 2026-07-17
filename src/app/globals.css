@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ============================================
-   Liquid Glass global surface system
+   Global surface system
    ============================================ */
 
 @layer base {
@@ -30,7 +30,6 @@
       radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.2), transparent 26rem),
       radial-gradient(circle at 82% 4%, rgba(191, 90, 242, 0.18), transparent 24rem),
       linear-gradient(135deg, var(--color-background-primary), var(--color-background-tertiary));
-    background-attachment: fixed;
   }
 
   .dark body {
@@ -40,7 +39,14 @@
       linear-gradient(135deg, #060914, var(--color-background-primary));
   }
 
-  * {
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  [role="button"],
+  .glass-card,
+  .glass-button {
     transition:
       background-color 180ms ease,
       border-color 180ms ease,

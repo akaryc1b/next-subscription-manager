@@ -1,6 +1,6 @@
 /**
  * Design Token - Colors
- * iOS 26 Liquid Glass + macOS admin palette.
+ * Admin dashboard color palette.
  */
 
 export const colors = {
