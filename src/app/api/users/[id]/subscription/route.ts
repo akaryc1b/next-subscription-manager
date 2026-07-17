@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/authorization'
 import { prisma } from '@/lib/prisma'
 
-// PATCH /api/users/[id]/subscription - 更新订阅设置
+const noStoreHeaders = {
+  'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
+// PATCH /api/users/[id]/subscription - 更新订阅访问额度
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,45 +20,47 @@ export async function PATCH(
     const { id } = await params
     const { maxAccess } = await request.json()
 
-    // 验证 maxAccess 参数
-    if (typeof maxAccess !== 'number' || maxAccess < 0) {
+    if (!Number.isInteger(maxAccess) || maxAccess < 0) {
       return NextResponse.json(
         { error: '最大访问次数必须是非负整数' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
-    // 查找用户的订阅
     const subscription = await prisma.subscription.findUnique({
       where: { userId: id },
+      select: { id: true },
     })
 
     if (!subscription) {
       return NextResponse.json(
         { error: '订阅不存在' },
-        { status: 404 }
+        { status: 404, headers: noStoreHeaders }
       )
     }
 
-    // 更新订阅设置
     const updatedSubscription = await prisma.subscription.update({
       where: { id: subscription.id },
       data: { maxAccess },
       select: {
         id: true,
         token: true,
+        tokenRotatedAt: true,
         maxAccess: true,
         accessCount: true,
         updatedAt: true,
       },
     })
 
-    return NextResponse.json({ subscription: updatedSubscription })
+    return NextResponse.json(
+      { subscription: updatedSubscription },
+      { headers: noStoreHeaders }
+    )
   } catch (error) {
     console.error('更新订阅设置失败:', error)
     return NextResponse.json(
       { error: '更新订阅设置失败' },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     )
   }
 }
@@ -73,6 +81,7 @@ export async function GET(
       select: {
         id: true,
         token: true,
+        tokenRotatedAt: true,
         maxAccess: true,
         accessCount: true,
         createdAt: true,
@@ -83,16 +92,26 @@ export async function GET(
     if (!subscription) {
       return NextResponse.json(
         { error: '订阅不存在' },
-        { status: 404 }
+        { status: 404, headers: noStoreHeaders }
       )
     }
 
-    return NextResponse.json({ subscription })
+    return NextResponse.json(
+      {
+        subscription,
+        policy: {
+          expires: false,
+          rotationMode: 'admin_manual',
+          oldTokenInvalidation: 'immediate',
+        },
+      },
+      { headers: noStoreHeaders }
+    )
   } catch (error) {
     console.error('获取订阅详情失败:', error)
     return NextResponse.json(
       { error: '获取订阅详情失败' },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     )
   }
 }
