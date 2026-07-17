@@ -159,7 +159,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          scope: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager@push
 
       - name: Generate image metadata
         id: metadata
