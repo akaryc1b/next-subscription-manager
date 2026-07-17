@@ -35,7 +35,11 @@ WITH duplicate_configs AS (
   FROM "configs"
 )
 UPDATE "configs"
-SET "name" = left("configs"."name" || ' [duplicate-' || substr("configs"."id", 1, 8) || ']', 255)
+SET "name" =
+  left(
+    "configs"."name",
+    255 - char_length(' [duplicate-' || "configs"."id" || ']')
+  ) || ' [duplicate-' || "configs"."id" || ']'
 FROM duplicate_configs
 WHERE "configs"."id" = duplicate_configs."id"
   AND duplicate_configs.duplicate_position > 1;

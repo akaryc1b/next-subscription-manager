@@ -1,21 +1,33 @@
-import { FlatCompat } from '@eslint/eslintrc'
-import { dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { FlatCompat } from "@eslint/eslintrc";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const compat = new FlatCompat({ baseDirectory: __dirname })
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const config = [
-  ...compat.extends('next/core-web-vitals'),
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  {
+    ignores: [
+      ".next/**",
+      "coverage/**",
+      "dist/**",
+      "next-env.d.ts",
+      "node_modules/**",
+    ],
+  },
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      'react/no-unescaped-entities': 'off',
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "react/no-unescaped-entities": "off",
     },
   },
-  {
-    ignores: ['.next/**', 'node_modules/**', 'dist/**', 'coverage/**'],
-  },
-]
+];
 
-export default config
+export default eslintConfig;
