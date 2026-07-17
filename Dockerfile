@@ -48,6 +48,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# The production server only needs the Node.js runtime. Removing npm also
+# avoids shipping its development-only dependency tree in the final image.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+    /usr/local/bin/npm \
+    /usr/local/bin/npx
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
