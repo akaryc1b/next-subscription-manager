@@ -8,15 +8,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  user
+  admin
+}
+
+enum SecurityEventType {
+  admin_auth_missing
+  admin_auth_invalid_session
+  admin_auth_forbidden
+  auth_failure
+  auth_sign_in_success
+  activation_token_missing
+  activation_token_invalid
+  activation_token_used
+  activation_token_expired
+  activation_setup_invalid_request
+  activation_setup_rejected
+  activation_setup_success
+  subscription_token_invalid
+  subscription_denied
+}
+
+enum SecuritySeverity {
+  info
+  warning
+  error
+  critical
+}
+
 model User {
   id              String           @id @default(uuid())
   username        String?          @unique
-  password        String?
   email           String           @unique
   name            String?
   emailVerified   Boolean          @default(false) @map("email_verified")
   image           String?
-  role            String           @default("user")
+  role            UserRole         @default(user)
   isActive        Boolean          @default(true) @map("is_active")
   isBanned        Boolean          @default(false) @map("is_banned")
   expiresAt       DateTime?        @map("expires_at")
@@ -39,12 +67,15 @@ model Config {
   userId      String       @map("user_id")
   name        String
   content     String       @db.Text
+  version     Int          @default(1)
+  isValidated Boolean      @default(false) @map("is_validated")
   isActive    Boolean      @default(true) @map("is_active")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userConfigs UserConfig[]
 
+  @@unique([userId, name])
   @@map("configs")
 }
 
@@ -78,22 +109,24 @@ model AccessLog {
   id             String       @id @default(uuid())
   subscriptionId String       @map("subscription_id")
   ipAddress      String       @map("ip_address")
-  userAgent      String?      @map("user_agent")
+  userAgent      String?      @map("user_agent") @db.VarChar(512)
   accessedAt     DateTime     @default(now()) @map("accessed_at")
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
+  @@index([subscriptionId, accessedAt])
+  @@index([accessedAt])
   @@map("access_logs")
 }
 
 model SecurityEvent {
   id         String   @id @default(uuid())
-  type       String
-  severity   String   @default("info")
+  type       SecurityEventType
+  severity   SecuritySeverity @default(info)
   method     String
   path       String
   statusCode Int?     @map("status_code")
   ipAddress  String   @map("ip_address")
-  userAgent  String?  @map("user_agent")
+  userAgent  String?  @map("user_agent") @db.VarChar(512)
   userId     String?  @map("user_id")
   identifier String?
   message    String?
@@ -186,6 +219,6 @@ model Passkey {
   aaguid       String?
 
   @@index([userId])
-  @@index([credentialID])
+  @@unique([credentialID])
   @@map("passkey")
 }

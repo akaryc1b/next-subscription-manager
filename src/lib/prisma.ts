@@ -10,7 +10,6 @@ function createPrismaClient() {
   // Delay loading the generated Prisma client until the app actually touches
   // the database. This keeps Next.js page-data collection from crashing in
   // environments where `prisma generate` has not populated node_modules yet.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaClient } = require('@prisma/client') as {
     PrismaClient: PrismaClientConstructor
   }

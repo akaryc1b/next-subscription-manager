@@ -1,10 +1,26 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+type SecurityEventType =
+  | 'admin_auth_missing'
+  | 'admin_auth_invalid_session'
+  | 'admin_auth_forbidden'
+  | 'auth_failure'
+  | 'auth_sign_in_success'
+  | 'activation_token_missing'
+  | 'activation_token_invalid'
+  | 'activation_token_used'
+  | 'activation_token_expired'
+  | 'activation_setup_invalid_request'
+  | 'activation_setup_rejected'
+  | 'activation_setup_success'
+  | 'subscription_token_invalid'
+  | 'subscription_denied'
+
 type SecuritySeverity = 'info' | 'warning' | 'error' | 'critical'
 
 type SecurityEventInput = {
-  type: string
+  type: SecurityEventType
   severity?: SecuritySeverity
   statusCode?: number
   userId?: string
@@ -49,7 +65,7 @@ export async function recordSecurityEvent(
         path: url.pathname,
         statusCode: event.statusCode,
         ipAddress: getClientIp(request),
-        userAgent: request.headers.get('user-agent'),
+        userAgent: request.headers.get('user-agent')?.slice(0, 512),
         userId: event.userId,
         identifier: event.identifier,
         message: event.message,

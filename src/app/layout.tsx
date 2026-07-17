@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
+import { APP_NAME } from '@/lib/app-config'
 
 export const metadata: Metadata = {
-  title: 'Subscription Manager',
+  title: APP_NAME,
   description: 'Next.js Subscription Management System',
 }
 

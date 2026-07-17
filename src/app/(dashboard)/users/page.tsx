@@ -72,6 +72,31 @@ interface Config {
   isActive: boolean;
 }
 
+type PaginatedResponse<T> = {
+  [key: string]: T[] | { page: number; pageSize: number; total: number; pageCount: number } | undefined;
+  pagination?: { page: number; pageSize: number; total: number; pageCount: number };
+};
+
+async function fetchAllPages<T>(basePath: string, collectionKey: string, params: Record<string, string> = {}): Promise<T[]> {
+  const pageSize = 100;
+  let page = 1;
+  let pageCount = 1;
+  const items: T[] = [];
+
+  do {
+    const searchParams = new URLSearchParams({ ...params, page: String(page), pageSize: String(pageSize) });
+    const res = await fetch(`${basePath}?${searchParams.toString()}`);
+    if (!res.ok) throw new Error(`Failed to fetch ${collectionKey}`);
+
+    const data = await res.json() as PaginatedResponse<T>;
+    items.push(...((data[collectionKey] as T[] | undefined) || []));
+    pageCount = data.pagination?.pageCount || 1;
+    page += 1;
+  } while (page <= pageCount);
+
+  return items;
+}
+
 // 生成用户状态标签
 function getUserStatusLabel(user: User): {
   text: string;
@@ -125,8 +150,7 @@ export default function UsersPage() {
   const [subscriptionUser, setSubscriptionUser] = useState<User | null>(null);
   const [subscriptionMaxAccess, setSubscriptionMaxAccess] = useState(20);
   const [resetting, setResetting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { isMobile, isHydrated } = useMediaQuery();
+  const { isMobile } = useMediaQuery();
 
   useEffect(() => {
     fetchConfigs();
@@ -134,9 +158,8 @@ export default function UsersPage() {
 
   const fetchConfigs = async () => {
     try {
-      const res = await fetch('/api/configs');
-      const data = await res.json();
-      setConfigs(data.configs);
+      const allConfigs = await fetchAllPages<Config>('/api/configs', 'configs');
+      setConfigs(allConfigs);
     } catch (err) {
       console.error('Failed to fetch configs', err);
     }
@@ -148,10 +171,8 @@ export default function UsersPage() {
       setSearching(true);
     }
     try {
-      const url = search ? `/api/users?search=${encodeURIComponent(search)}` : '/api/users';
-      const res = await fetch(url);
-      const data = await res.json();
-      setUsers(data.users);
+      const allUsers = await fetchAllPages<User>('/api/users', 'users', search ? { search } : {});
+      setUsers(allUsers);
     } catch (err) {
       setError('Failed to fetch user list');
     } finally {
