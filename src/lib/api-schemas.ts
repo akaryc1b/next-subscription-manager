@@ -19,7 +19,10 @@ export const userRoleSchema = z.enum(['user', 'admin'])
 const optionalPasswordSchema = z.preprocess(value => {
   if (typeof value === 'string' && value.trim() === '') return undefined
   return value
-}, z.string().min(1, '密码不能为空').optional())
+}, z.string()
+  .min(12, '密码至少 12 个字符')
+  .max(128, '密码最多 128 个字符')
+  .optional())
 
 export const userCreateSchema = z.object({
   email: z.email('邮箱格式无效').trim().toLowerCase(),
