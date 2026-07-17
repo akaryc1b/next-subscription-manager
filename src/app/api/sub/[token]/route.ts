@@ -3,6 +3,23 @@ import { prisma } from '@/lib/prisma'
 import { getClientIp, maskToken, recordSecurityEvent } from '@/lib/security-events'
 import yaml from 'js-yaml'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+const noStoreHeaders = {
+  'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+  'X-Content-Type-Options': 'nosniff',
+}
+
+function errorResponse(error: string, status: number) {
+  return NextResponse.json(
+    { error },
+    { status, headers: noStoreHeaders }
+  )
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
@@ -19,6 +36,9 @@ export async function GET(
               include: {
                 config: true,
               },
+              orderBy: {
+                createdAt: 'asc',
+              },
             },
           },
         },
@@ -31,13 +51,10 @@ export async function GET(
         severity: 'warning',
         statusCode: 404,
         identifier: maskToken(token),
-        message: '访问不存在的订阅 token',
+        message: '访问不存在或已轮换失效的订阅 token',
       })
 
-      return NextResponse.json(
-        { error: '订阅不存在' },
-        { status: 404 }
-      )
+      return errorResponse('订阅不存在或链接已失效', 404)
     }
 
     const user = subscription.user
@@ -55,10 +72,7 @@ export async function GET(
         },
       })
 
-      return NextResponse.json(
-        { error: '用户已禁用' },
-        { status: 403 }
-      )
+      return errorResponse('用户已禁用', 403)
     }
 
     if (user.isBanned) {
@@ -74,10 +88,7 @@ export async function GET(
         },
       })
 
-      return NextResponse.json(
-        { error: '用户已被封禁' },
-        { status: 403 }
-      )
+      return errorResponse('用户已被封禁', 403)
     }
 
     if (user.expiresAt && new Date(user.expiresAt) < new Date()) {
@@ -94,13 +105,9 @@ export async function GET(
         },
       })
 
-      return NextResponse.json(
-        { error: '订阅已过期' },
-        { status: 403 }
-      )
+      return errorResponse('订阅已过期', 403)
     }
 
-    // 检查访问次数限制
     if (subscription.maxAccess > 0 && subscription.accessCount >= subscription.maxAccess) {
       await recordSecurityEvent(request, {
         type: 'subscription_denied',
@@ -116,10 +123,7 @@ export async function GET(
         },
       })
 
-      return NextResponse.json(
-        { error: '订阅访问次数已达上限，请联系管理员重置' },
-        { status: 403 }
-      )
+      return errorResponse('订阅访问次数已达上限，请联系管理员重置', 403)
     }
 
     const activeConfigs = user.userConfigs
@@ -127,14 +131,11 @@ export async function GET(
       .filter(config => config.isActive)
 
     if (activeConfigs.length === 0) {
-      return NextResponse.json(
-        { error: '没有可用的配置' },
-        { status: 404 }
-      )
+      return errorResponse('没有可用的配置', 404)
     }
 
-    // 方案 A：首配置为基础模板，保留所有字段（dns, mixed-port, rule-providers 等）
-    // 后续配置只合并列表和 provider 字段
+    // 第一份配置作为基础模板；后续配置只合并列表和 provider 字段。
+    // userConfigs 已按创建时间排序，保证每次合并结果一致。
     let mergedConfig: any = null
     const listFields = ['proxies', 'proxy-groups', 'rules']
     const providerFields = ['rule-providers', 'proxy-providers']
@@ -148,22 +149,20 @@ export async function GET(
         }
 
         if (!mergedConfig) {
-          // 第一个配置作为基础模板，保留所有字段
           mergedConfig = { ...parsed }
-          // 确保需要追加的列表字段存在
+
           for (const field of listFields) {
             if (!Array.isArray(mergedConfig[field])) {
               mergedConfig[field] = []
             }
           }
-          // 确保 provider 字段可按键合并
+
           for (const field of providerFields) {
             if (!mergedConfig[field] || typeof mergedConfig[field] !== 'object' || Array.isArray(mergedConfig[field])) {
               mergedConfig[field] = {}
             }
           }
         } else {
-          // 后续配置只追加列表字段
           if (parsed.proxies && Array.isArray(parsed.proxies)) {
             mergedConfig.proxies.push(...parsed.proxies)
           }
@@ -173,7 +172,6 @@ export async function GET(
           if (parsed.rules && Array.isArray(parsed.rules)) {
             mergedConfig.rules.push(...parsed.rules)
           }
-          // rule-providers 和 proxy-providers 是对象，需要合并键
           if (parsed['rule-providers'] && typeof parsed['rule-providers'] === 'object') {
             mergedConfig['rule-providers'] = {
               ...mergedConfig['rule-providers'],
@@ -187,28 +185,24 @@ export async function GET(
             }
           }
         }
-      } catch (e) {
-        console.error(`Failed to parse config ${config.name}:`, e)
+      } catch (error) {
+        console.error(`Failed to parse config ${config.name}:`, error)
       }
     }
 
-    // 兜底：如果所有配置解析失败
     if (!mergedConfig) {
-      return NextResponse.json(
-        { error: '配置解析失败' },
-        { status: 500 }
-      )
+      return errorResponse('配置解析失败', 500)
     }
 
     const ip = getClientIp(request)
     const userAgent = request.headers.get('user-agent')?.slice(0, 512) || undefined
 
-    // 更新访问计数并记录访问日志
     const accessGranted = await prisma.$transaction(async tx => {
       const updateResult = subscription.maxAccess > 0
         ? await tx.subscription.updateMany({
             where: {
               id: subscription.id,
+              token,
               accessCount: {
                 lt: subscription.maxAccess,
               },
@@ -216,10 +210,14 @@ export async function GET(
             data: { accessCount: { increment: 1 } },
           })
         : await tx.subscription.updateMany({
-            where: { id: subscription.id },
+            where: {
+              id: subscription.id,
+              token,
+            },
             data: { accessCount: { increment: 1 } },
           })
 
+      // token 条件保证管理员在请求处理中轮换 Token 时，旧请求不会继续获准。
       if (updateResult.count !== 1) {
         return false
       }
@@ -242,35 +240,30 @@ export async function GET(
         statusCode: 403,
         userId: user.id,
         identifier: maskToken(token),
-        message: '订阅访问次数在并发访问中达到上限',
+        message: '订阅 Token 已轮换或访问次数在并发请求中达到上限',
         metadata: {
-          reason: 'access_limit_exceeded_atomic',
+          reason: 'token_rotated_or_access_limit_exceeded_atomic',
           maxAccess: subscription.maxAccess,
           accessCount: subscription.accessCount,
         },
       })
 
-      return NextResponse.json(
-        { error: '订阅访问次数已达上限，请联系管理员重置' },
-        { status: 403 }
-      )
+      return errorResponse('订阅链接已失效或访问次数已达上限', 403)
     }
 
     const yamlContent = yaml.dump(mergedConfig)
-    // 使用邮箱的用户名部分作为文件名
     const emailPrefix = user.email.split('@')[0]
     const cleanFilename = emailPrefix.replace(/[^\w\-]/g, '_')
 
     return new NextResponse(yamlContent, {
       headers: {
-        'Content-Type': 'text/yaml',
-        'Content-Disposition': `attachment; filename=${cleanFilename}-subscription.yaml`,
+        ...noStoreHeaders,
+        'Content-Type': 'text/yaml; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${cleanFilename}-subscription.yaml"`,
       },
     })
   } catch (error) {
-    return NextResponse.json(
-      { error: '访问订阅失败' },
-      { status: 500 }
-    )
+    console.error('访问订阅失败:', error)
+    return errorResponse('访问订阅失败', 500)
   }
 }
