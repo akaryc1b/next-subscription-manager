@@ -15,7 +15,9 @@
     "db:migrate:email": "dotenv -e .env -- tsx prisma/migrations/add-email-to-users.ts",
     "reset-password": "dotenv -e .env -- tsx scripts/reset-password.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "format": "prettier --check .",
+    "test": "vitest run",
+    "db:migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.6.9",
@@ -41,6 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.1",
@@ -50,12 +53,12 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.15",
     "postcss": "^8.5.14",
+    "prettier": "^3.9.5",
     "prisma": "^6.19.3",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "@eslint/eslintrc": "^3.3.3",
     "vitest": "^4.0.15"
   },
   "pnpm": {

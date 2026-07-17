@@ -35,6 +35,36 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_NAME: ${ADMIN_NAME}
+      APP_NAME: ${APP_NAME:-Subscription Manager}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Subscription Manager}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres-backup:
+    image: postgres:16-alpine
+    container_name: subscription-db-backup
+    profiles: ["backup"]
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-subscription_db}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      while true; do
+        pg_dump -h postgres -U postgres "$${POSTGRES_DB}" | gzip > /backups/subscription-$$(date +%Y%m%d%H%M%S).sql.gz;
+        find /backups -name "subscription-*.sql.gz" -mtime +7 -delete;
+        sleep 86400;
+      done
     depends_on:
       postgres:
         condition: service_healthy
