@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { maskToken, recordSecurityEvent } from '@/lib/security-events'
 
+const noStoreHeaders = {
+  'Cache-Control': 'no-store, max-age=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -17,7 +23,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { error: '激活令牌无效' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
@@ -26,8 +32,9 @@ export async function GET(request: NextRequest) {
       include: {
         user: {
           select: {
-            id: true,
             username: true,
+            name: true,
+            email: true,
           },
         },
       },
@@ -44,7 +51,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { error: '激活令牌不存在' },
-        { status: 404 }
+        { status: 404, headers: noStoreHeaders }
       )
     }
 
@@ -60,7 +67,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { error: '激活令牌已使用' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
@@ -76,18 +83,27 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(
         { error: '激活令牌已过期' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
-    return NextResponse.json({
-      username: activationToken.user.username,
-      userId: activationToken.user.id,
-    })
+    const emailName = activationToken.user.email.split('@')[0]
+    const displayName = activationToken.user.name
+      || activationToken.user.username
+      || emailName
+
+    return NextResponse.json(
+      {
+        displayName,
+        email: activationToken.user.email,
+      },
+      { headers: noStoreHeaders }
+    )
   } catch (error) {
+    console.error('验证激活令牌失败:', error)
     return NextResponse.json(
       { error: '验证失败' },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     )
   }
 }
