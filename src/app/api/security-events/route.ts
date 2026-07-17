@@ -7,6 +7,7 @@ const securityEventTypes = [
   'admin_auth_invalid_session',
   'admin_auth_forbidden',
   'auth_failure',
+  'auth_rate_limited',
   'auth_sign_in_success',
   'activation_token_missing',
   'activation_token_invalid',
