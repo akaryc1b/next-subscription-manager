@@ -1,27 +1,38 @@
-'use client'
-
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth-client'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { Sidebar } from '@/components/features/sidebar'
 import { Header } from '@/components/features/header'
+import { MobileBottomNav } from '@/components/features/mobile-bottom-nav'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const { data: session, isPending } = authClient.useSession()
+  const session = await auth.api.getSession({
+    headers: await headers(),
+    query: {
+      disableCookieCache: true,
+    },
+  })
 
-  useEffect(() => {
-    if (!isPending && !session) {
-      router.push('/login')
-    }
-  }, [session, isPending, router])
+  if (!session?.user?.id) {
+    redirect('/login')
+  }
 
-  if (isPending || !session) {
-    return null
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      role: true,
+      isActive: true,
+      isBanned: true,
+    },
+  })
+
+  if (!user || user.role !== 'admin' || !user.isActive || user.isBanned) {
+    redirect('/login?reason=forbidden')
   }
 
   return (
@@ -33,10 +44,11 @@ export default function DashboardLayout({
       </div>
       <div className="relative z-10 flex min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 lg:pl-4">
         <Header />
-        <main className="flex-1 overflow-y-auto rounded-[1.5rem] border border-border bg-background-secondary p-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:rounded-[2rem] sm:p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto rounded-[1.5rem] border border-border bg-background-secondary p-3 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:rounded-[2rem] sm:p-4 sm:pb-[calc(env(safe-area-inset-bottom)+6.5rem)] lg:p-6 lg:pb-6">
           {children}
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   )
 }
