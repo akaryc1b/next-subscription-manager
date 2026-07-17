@@ -90,7 +90,7 @@ export const typography = {
   letterSpacing: {
     tighter: '-0.02em',
     tight: '0',
-    normal: '0',        // macOS-style natural tracking
+    normal: '0',        // natural tracking
     wide: '0.05em',
     wider: '0.1em',     // 标题使用
     widest: '0.15em',   // 强调效果

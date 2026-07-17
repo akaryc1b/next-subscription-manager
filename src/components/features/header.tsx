@@ -44,7 +44,7 @@ export function Header() {
             </div>
             <div className="min-w-0">
               <div className="truncate text-sm font-semibold sm:text-base">{current?.label || 'Dashboard'}</div>
-              <div className="hidden text-xs text-foreground-muted sm:block">Liquid Glass admin workspace</div>
+              <div className="hidden text-xs text-foreground-muted sm:block">Admin workspace</div>
               <div className="text-[11px] text-foreground-muted sm:hidden">Admin workspace</div>
             </div>
           </div>

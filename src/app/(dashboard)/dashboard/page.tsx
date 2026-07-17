@@ -37,10 +37,6 @@ interface RecentActivity {
   accessedAt: string;
 }
 
-// ASCII 进度条生成器
-function getProgress(value: number, max: number): number {
-  return Math.min(Math.round((value / Math.max(max, 1)) * 100), 100);
-}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({
@@ -67,18 +63,11 @@ export default function DashboardPage() {
       const statsData = await statsRes.json();
       const logsData = await logsRes.json();
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayLogs =
-        logsData.logs?.filter(
-          (log: { accessedAt: string }) => new Date(log.accessedAt) >= today
-        ) || [];
-
       setStats({
         users: statsData.stats?.users || 0,
         configs: statsData.stats?.configs || 0,
         subscriptions: statsData.stats?.subscriptions || 0,
-        todayAccesses: todayLogs.length,
+        todayAccesses: statsData.stats?.todayAccesses || 0,
       });
 
       const activities =
@@ -122,7 +111,7 @@ export default function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <Sparkles className="h-8 w-8 text-accent-primary animate-pulse" />
-        <div className="text-foreground-secondary text-sm">Preparing your glass workspace...</div>
+        <div className="text-foreground-secondary text-sm">Preparing your workspace...</div>
       </div>
     );
   }
@@ -131,7 +120,6 @@ export default function DashboardPage() {
     {
       title: 'USERS',
       value: stats.users,
-      max: 100,
       icon: Users,
       desc: 'registered users',
       href: '/users',
@@ -139,7 +127,6 @@ export default function DashboardPage() {
     {
       title: 'CONFIGS',
       value: stats.configs,
-      max: 50,
       icon: FileText,
       desc: 'active configs',
       href: '/configs',
@@ -147,7 +134,6 @@ export default function DashboardPage() {
     {
       title: 'SUBSCRIPTIONS',
       value: stats.subscriptions,
-      max: 100,
       icon: LinkIcon,
       desc: 'generated links',
       href: '/configs',
@@ -155,7 +141,6 @@ export default function DashboardPage() {
     {
       title: 'TODAY ACCESS',
       value: stats.todayAccesses,
-      max: 50,
       icon: Activity,
       desc: 'requests today',
       href: '/monitor',
@@ -169,14 +154,7 @@ export default function DashboardPage() {
         <div className="liquid-orb bottom-[-6rem] left-24 h-64 w-64 bg-background-active" />
         <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-background-secondary px-3 py-1 text-xs font-medium text-foreground-secondary backdrop-blur-xl">
-              <Sparkles className="h-3.5 w-3.5 text-accent-primary" />
-              iOS 26 Liquid Glass
-            </div>
             <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">Subscription Control Center</h1>
-            <p className="mt-2 max-w-2xl text-sm text-foreground-secondary lg:text-base">
-              A macOS-inspired workspace for users, configs, subscription links, and access monitoring.
-            </p>
           </div>
           <Button onClick={fetchData} variant="secondary" disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -188,7 +166,6 @@ export default function DashboardPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
-          const progress = getProgress(stat.value, stat.max);
           return (
             <Link key={stat.title} href={stat.href}>
               <Card className="group overflow-hidden hover:-translate-y-1 hover:border-border-hover hover:shadow-2xl">
@@ -201,13 +178,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="mt-5 text-4xl font-semibold tracking-tight text-foreground-primary">{stat.value}</div>
                   <div className="mt-1 text-sm font-medium text-foreground-secondary">{stat.desc}</div>
-                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-background-active">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-info"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <div className="mt-2 text-xs text-foreground-muted">{stat.title.toLowerCase()} capacity · {progress}%</div>
+                  <div className="mt-5 text-xs uppercase tracking-[0.18em] text-foreground-muted">{stat.title.toLowerCase()}</div>
                 </CardContent>
               </Card>
             </Link>

@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       uniqueIpRows,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.config.count(),
+      prisma.config.count({ where: { isActive: true } }),
       prisma.subscription.count(),
       prisma.accessLog.count({ where: scopedDate }),
       prisma.securityEvent.count({ where: scopedSecurityDate }),

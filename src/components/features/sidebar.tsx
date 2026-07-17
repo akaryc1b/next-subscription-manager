@@ -26,7 +26,7 @@ export function Sidebar() {
         {!collapsed && (
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold tracking-tight">Subscription Manager</div>
-            <div className="text-xs text-foreground-muted">macOS Admin Console</div>
+            <div className="text-xs text-foreground-muted">Admin Console</div>
           </div>
         )}
         <Button variant="ghost" size="icon-sm" onClick={() => setCollapsed(!collapsed)}>
@@ -65,7 +65,7 @@ export function Sidebar() {
               <span className="h-2 w-2 rounded-full bg-accent-success shadow-[0_0_16px_var(--color-accent-success)]" />
               System online
             </div>
-            <div className="mt-1">Liquid Glass UI</div>
+            <div className="mt-1">Workspace ready</div>
           </>
         ) : (
           <div className="mx-auto h-2 w-2 rounded-full bg-accent-success" />
