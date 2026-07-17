@@ -25,6 +25,25 @@ ALTER TABLE "users" ALTER COLUMN "role" SET DEFAULT 'user';
 
 ALTER TABLE "configs" ADD COLUMN "version" INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE "configs" ADD COLUMN "is_validated" BOOLEAN NOT NULL DEFAULT false;
+
+-- Existing installs may already have duplicate config names per user. Rename only
+-- duplicate rows before enforcing uniqueness so the migration can deploy safely.
+WITH duplicate_configs AS (
+  SELECT
+    "id",
+    row_number() OVER (PARTITION BY "user_id", "name" ORDER BY "created_at", "id") AS duplicate_position
+  FROM "configs"
+)
+UPDATE "configs"
+SET "name" =
+  left(
+    "configs"."name",
+    255 - char_length(' [duplicate-' || "configs"."id" || ']')
+  ) || ' [duplicate-' || "configs"."id" || ']'
+FROM duplicate_configs
+WHERE "configs"."id" = duplicate_configs."id"
+  AND duplicate_configs.duplicate_position > 1;
+
 CREATE UNIQUE INDEX "configs_user_id_name_key" ON "configs"("user_id", "name");
 
 ALTER TABLE "access_logs" ALTER COLUMN "user_agent" TYPE VARCHAR(512) USING left("user_agent", 512);
