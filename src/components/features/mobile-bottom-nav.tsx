@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils'
 import { navItems } from '@/lib/nav-items'
 
 const mobileLabels: Record<string, string> = {
-  '/dashboard': 'Overview',
-  '/users': 'Users',
-  '/configs': 'Configs',
-  '/monitor': 'Monitor',
-  '/settings': 'Settings',
+  '/dashboard': '概览',
+  '/users': '用户',
+  '/configs': '配置',
+  '/monitor': '监控',
+  '/settings': '设置',
 }
 
 export function MobileBottomNav() {
@@ -18,7 +18,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      aria-label="Primary navigation"
+      aria-label="主要导航"
       className="fixed inset-x-2 bottom-2 z-40 grid grid-cols-5 rounded-[1.5rem] border border-border bg-background-secondary/95 p-1.5 pb-[calc(env(safe-area-inset-bottom)+0.375rem)] shadow-2xl backdrop-blur-2xl lg:hidden"
     >
       {navItems.map((item) => {
