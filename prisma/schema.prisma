@@ -92,15 +92,16 @@ model UserConfig {
 }
 
 model Subscription {
-  id          String      @id @default(uuid())
-  userId      String      @unique @map("user_id")
-  token       String      @unique
-  maxAccess   Int         @default(20) @map("max_access")
-  accessCount Int         @default(0) @map("access_count")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at")
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessLogs  AccessLog[]
+  id             String      @id @default(uuid())
+  userId         String      @unique @map("user_id")
+  token          String      @unique
+  tokenRotatedAt DateTime    @default(now()) @map("token_rotated_at")
+  maxAccess      Int         @default(20) @map("max_access")
+  accessCount    Int         @default(0) @map("access_count")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at")
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessLogs     AccessLog[]
 
   @@map("subscriptions")
 }
