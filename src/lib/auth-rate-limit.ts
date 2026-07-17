@@ -16,9 +16,17 @@ export async function checkAuthRateLimit(
   const normalizedIdentifier = identifier?.trim().toLowerCase()
   const windowStartedAt = new Date(Date.now() - WINDOW_MS)
   const identityFilters = [
-    { ipAddress },
+    ...(ipAddress !== 'unknown' ? [{ ipAddress }] : []),
     ...(normalizedIdentifier ? [{ identifier: normalizedIdentifier }] : []),
   ]
+
+  if (identityFilters.length === 0) {
+    return {
+      limited: false,
+      retryAfterSeconds: 0,
+      remainingAttempts: MAX_FAILURES,
+    }
+  }
 
   const failureCount = await prisma.securityEvent.count({
     where: {
