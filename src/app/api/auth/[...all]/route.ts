@@ -33,7 +33,7 @@ function wrapAuthHandler(
 
       if (rateLimit.limited) {
         await recordSecurityEvent(request, {
-          type: 'auth_failure',
+          type: 'auth_rate_limited',
           severity: 'warning',
           statusCode: 429,
           identifier,
