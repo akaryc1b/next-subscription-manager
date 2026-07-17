@@ -16,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-push:
-    name: Release
-    runs-on: ubuntu-latest
+  scan:
+    name: Scan amd64 image
+    runs-on: ubuntu-24.04
     environment: docker
 
     steps:
@@ -28,19 +28,128 @@ jobs:
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           if [ -z "$DOCKERHUB_USERNAME" ]; then
-            echo "::error::Repository variable DOCKERHUB_USERNAME is not configured."
+            echo "::error::Environment secret DOCKERHUB_USERNAME is not configured."
             exit 1
           fi
           if [ -z "$DOCKERHUB_TOKEN" ]; then
-            echo "::error::Repository secret DOCKERHUB_TOKEN is not configured."
+            echo "::error::Environment secret DOCKERHUB_TOKEN is not configured."
             exit 1
           fi
 
       - name: Check out repository
         uses: actions/checkout@v6
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Generate image metadata
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: next-subscription-manager:scan
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=scan-linux-amd64
+          cache-to: type=gha,mode=max,scope=scan-linux-amd64
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: next-subscription-manager:scan
+          format: table
+          exit-code: '1'
+          severity: CRITICAL,HIGH
+
+  build:
+    name: Build ${{ matrix.platform }}
+    needs: scan
+    runs-on: ${{ matrix.runner }}
+    environment: docker
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            artifact: linux-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            artifact: linux-arm64
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          scope: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager@push
+
+      - name: Generate image metadata
+        id: metadata
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager
+
+      - name: Build and push image by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.platform }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager
+          labels: ${{ steps.metadata.outputs.labels }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=build-${{ matrix.artifact }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.artifact }}
+
+      - name: Export image digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: Upload image digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.artifact }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Publish multi-platform image
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: docker
+
+    steps:
+      - name: Download image digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digest-*
+          merge-multiple: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -63,34 +172,36 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
-      - name: Build image for scanning
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: next-subscription-manager:scan
-          labels: ${{ steps.metadata.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Create multi-platform manifest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          METADATA_JSON: ${{ steps.metadata.outputs.json }}
+        run: |
+          mapfile -t tags < <(jq -r '.tags[]' <<< "$METADATA_JSON")
+          tag_args=()
+          for tag in "${tags[@]}"; do
+            tag_args+=(--tag "$tag")
+          done
 
-      - name: Scan image
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: next-subscription-manager:scan
-          format: table
-          exit-code: '1'
-          severity: CRITICAL,HIGH
+          mapfile -t digest_files < <(
+            find "$RUNNER_TEMP/digests" -maxdepth 1 -type f -print
+          )
+          if [ "${#digest_files[@]}" -ne 2 ]; then
+            echo "::error::Expected two platform digests, found ${#digest_files[@]}."
+            exit 1
+          fi
 
-      - name: Build and push image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          labels: ${{ steps.metadata.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          sources=()
+          for digest_file in "${digest_files[@]}"; do
+            digest="$(basename "$digest_file")"
+            sources+=("$DOCKERHUB_USERNAME/next-subscription-manager@sha256:$digest")
+          done
+
+          docker buildx imagetools create "${tag_args[@]}" "${sources[@]}"
+
+      - name: Inspect published image
+        env:
+          METADATA_JSON: ${{ steps.metadata.outputs.json }}
+        run: |
+          image="$(jq -r '.tags[0]' <<< "$METADATA_JSON")"
+          docker buildx imagetools inspect "$image"
