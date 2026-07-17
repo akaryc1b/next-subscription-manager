@@ -1,35 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { hashCredentialPassword, upsertCredentialPassword } from '@/lib/credential-account'
 import { maskToken, recordSecurityEvent } from '@/lib/security-events'
 
-export async function POST(request: NextRequest) {
-  try {
-    const { token, authType, password } = await request.json()
+const activationSetupSchema = z.object({
+  token: z.string().min(32),
+  authType: z.literal('password'),
+  password: z.string().min(12, '密码至少 12 个字符').max(128, '密码最多 128 个字符'),
+})
 
-    if (!token || !authType) {
+const noStoreHeaders = {
+  'Cache-Control': 'no-store, max-age=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
+export async function POST(request: NextRequest) {
+  let token: string | undefined
+
+  try {
+    const body = await request.json()
+    token = typeof body?.token === 'string' ? body.token : undefined
+    const parsed = activationSetupSchema.safeParse(body)
+
+    if (!parsed.success) {
       await recordSecurityEvent(request, {
         type: 'activation_setup_invalid_request',
         severity: 'warning',
         statusCode: 400,
         identifier: maskToken(token),
-        message: '激活设置参数不完整',
+        message: '激活设置参数无效',
         metadata: {
-          hasToken: Boolean(token),
-          authType,
+          issue: parsed.error.issues[0]?.message,
         },
       })
 
       return NextResponse.json(
-        { error: '参数不完整' },
-        { status: 400 }
+        { error: parsed.error.issues[0]?.message || '请求参数无效' },
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
+    const { password } = parsed.data
+    token = parsed.data.token
+
     const activationToken = await prisma.activationToken.findUnique({
       where: { token },
-      include: {
-        user: true,
+      select: {
+        id: true,
+        userId: true,
+        used: true,
+        expiresAt: true,
       },
     })
 
@@ -40,14 +62,11 @@ export async function POST(request: NextRequest) {
         statusCode: 404,
         identifier: maskToken(token),
         message: '激活设置使用不存在的 token',
-        metadata: {
-          authType,
-        },
       })
 
       return NextResponse.json(
         { error: '激活令牌不存在' },
-        { status: 404 }
+        { status: 404, headers: noStoreHeaders }
       )
     }
 
@@ -59,14 +78,11 @@ export async function POST(request: NextRequest) {
         userId: activationToken.userId,
         identifier: maskToken(token),
         message: '重复使用已消费的激活 token 设置认证',
-        metadata: {
-          authType,
-        },
       })
 
       return NextResponse.json(
         { error: '激活令牌已使用' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
@@ -78,102 +94,75 @@ export async function POST(request: NextRequest) {
         userId: activationToken.userId,
         identifier: maskToken(token),
         message: '使用已过期的激活 token 设置认证',
-        metadata: {
-          authType,
-        },
       })
 
       return NextResponse.json(
         { error: '激活令牌已过期' },
-        { status: 400 }
+        { status: 400, headers: noStoreHeaders }
       )
     }
 
-    if (authType === 'password') {
-      if (!password || password.length < 6) {
-        await recordSecurityEvent(request, {
-          type: 'activation_setup_rejected',
-          severity: 'info',
-          statusCode: 400,
-          userId: activationToken.userId,
-          identifier: maskToken(token),
-          message: '激活设置密码不符合规则',
-          metadata: {
-            authType,
-          },
-        })
+    const passwordHash = await hashCredentialPassword(password)
+    const now = new Date()
 
-        return NextResponse.json(
-          { error: '密码至少6个字符' },
-          { status: 400 }
-        )
+    const activated = await prisma.$transaction(async tx => {
+      const consumed = await tx.activationToken.updateMany({
+        where: {
+          id: activationToken.id,
+          used: false,
+          expiresAt: { gt: now },
+        },
+        data: { used: true },
+      })
+
+      if (consumed.count !== 1) {
+        return false
       }
 
-      const hashedPassword = await hashCredentialPassword(password)
+      await upsertCredentialPassword(tx, activationToken.userId, passwordHash)
+      return true
+    })
 
-      await prisma.$transaction(async tx => {
-        await upsertCredentialPassword(tx, activationToken.userId, hashedPassword)
-        await tx.activationToken.update({
-          where: { id: activationToken.id },
-          data: { used: true },
-        })
-      })
-
-      await recordSecurityEvent(request, {
-        type: 'activation_setup_success',
-        severity: 'info',
-        statusCode: 200,
-        userId: activationToken.userId,
-        identifier: maskToken(token),
-        message: '激活设置成功',
-        metadata: {
-          authType,
-        },
-      })
-
-      return NextResponse.json({ success: true })
-    }
-
-    if (authType === 'passkey') {
+    if (!activated) {
       await recordSecurityEvent(request, {
         type: 'activation_setup_rejected',
-        severity: 'info',
-        statusCode: 501,
+        severity: 'warning',
+        statusCode: 409,
         userId: activationToken.userId,
         identifier: maskToken(token),
-        message: '激活设置请求未实现的认证方式',
-        metadata: {
-          authType,
-        },
+        message: '激活 token 在并发请求中已消费或过期',
       })
 
-      // Passkey设置需要WebAuthn流程，暂时返回未实现
       return NextResponse.json(
-        { error: 'Passkey功能即将推出' },
-        { status: 501 }
+        { error: '激活令牌已失效，请重新获取激活链接' },
+        { status: 409, headers: noStoreHeaders }
       )
     }
 
     await recordSecurityEvent(request, {
-      type: 'activation_setup_rejected',
-      severity: 'warning',
-      statusCode: 400,
+      type: 'activation_setup_success',
+      severity: 'info',
+      statusCode: 200,
       userId: activationToken.userId,
       identifier: maskToken(token),
-      message: '激活设置请求不支持的认证类型',
+      message: '激活设置成功',
       metadata: {
-        authType,
+        authType: 'password',
       },
     })
 
     return NextResponse.json(
-      { error: '不支持的认证类型' },
-      { status: 400 }
+      {
+        success: true,
+        next: '/login?activated=1',
+      },
+      { headers: noStoreHeaders }
     )
   } catch (error) {
+    console.error('设置激活密码失败:', error)
     return NextResponse.json(
       { error: '设置失败' },
-      { status: 500 }
+      { status: 500, headers: noStoreHeaders }
     )
   }
 }

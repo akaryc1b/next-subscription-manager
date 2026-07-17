@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { hashCredentialPassword, upsertCredentialPassword } from '@/lib/credential-account'
 import { randomBytes } from 'crypto'
 import { formatZodError, paginationQuerySchema, userCreateSchema } from '@/lib/api-schemas'
+import { generateSubscriptionToken } from '@/lib/subscription-token'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -11,7 +12,6 @@ export async function GET(request: NextRequest) {
     const adminGuard = await requireAdmin(request)
     if (adminGuard.response) return adminGuard.response
 
-    // 获取搜索参数
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
     const pagination = paginationQuerySchema.parse(Object.fromEntries(searchParams))
@@ -23,39 +23,48 @@ export async function GET(request: NextRequest) {
 
     const [users, total] = await prisma.$transaction([
       prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        isActive: true,
-        isBanned: true,
-        expiresAt: true,
-        createdAt: true,
-        updatedAt: true,
-        subscription: {
-          select: {
-            token: true,
-            maxAccess: true,
-            accessCount: true,
+        where,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isActive: true,
+          isBanned: true,
+          expiresAt: true,
+          createdAt: true,
+          updatedAt: true,
+          subscription: {
+            select: {
+              token: true,
+              tokenRotatedAt: true,
+              maxAccess: true,
+              accessCount: true,
+            },
+          },
+          userConfigs: {
+            select: {
+              configId: true,
+            },
           },
         },
-        userConfigs: {
-          select: {
-            configId: true,
-          },
+        orderBy: {
+          createdAt: 'desc',
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
       prisma.user.count({ where }),
     ])
 
-    return NextResponse.json({ users, pagination: { page, pageSize, total, pageCount: Math.ceil(Number(total) / pageSize) } })
+    return NextResponse.json({
+      users,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.ceil(Number(total) / pageSize),
+      },
+    })
   } catch (error) {
     return NextResponse.json(
       { error: '获取用户列表失败' },
@@ -69,7 +78,13 @@ export async function POST(request: NextRequest) {
     const adminGuard = await requireAdmin(request)
     if (adminGuard.response) return adminGuard.response
 
-    const { email, password, role: normalizedRole, expiresAt, configIds } = userCreateSchema.parse(await request.json())
+    const {
+      email,
+      password,
+      role: normalizedRole,
+      expiresAt,
+      configIds,
+    } = userCreateSchema.parse(await request.json())
 
     const isAdmin = normalizedRole === 'admin'
 
@@ -84,7 +99,7 @@ export async function POST(request: NextRequest) {
       ? await hashCredentialPassword(password)
       : null
 
-    const token = randomBytes(16).toString('hex')
+    const token = generateSubscriptionToken()
     const activationToken = randomBytes(32).toString('hex')
     const activationExpiresAt = new Date()
     activationExpiresAt.setDate(activationExpiresAt.getDate() + 7)
@@ -121,6 +136,7 @@ export async function POST(request: NextRequest) {
           subscription: {
             select: {
               token: true,
+              tokenRotatedAt: true,
               maxAccess: true,
               accessCount: true,
             },

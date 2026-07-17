@@ -20,6 +20,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: subscription-app
+    init: true
     ports:
       - "3000:3000"
     environment:
@@ -27,16 +28,15 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?BETTER_AUTH_URL is required}
       BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
-      # GitHub OAuth配置（多认证方式支持）
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:3000/api/auth/callback/github}
-      # 管理员初始化配置（必填，执行 seed 时使用）
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      ADMIN_NAME: ${ADMIN_NAME}
       APP_NAME: ${APP_NAME:-Subscription Manager}
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Subscription Manager}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1"]
       interval: 30s
@@ -60,6 +60,7 @@ services:
       - ./backups:/backups
     entrypoint: ["/bin/sh", "-c"]
     command: >
+      umask 077;
       while true; do
         pg_dump -h postgres -U postgres "$${POSTGRES_DB}" | gzip > /backups/subscription-$$(date +%Y%m%d%H%M%S).sql.gz;
         find /backups -name "subscription-*.sql.gz" -mtime +7 -delete;
