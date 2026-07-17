@@ -31,6 +31,7 @@ export async function checkAuthRateLimit(
   const failureCount = await prisma.securityEvent.count({
     where: {
       type: 'auth_failure',
+      path: { endsWith: '/sign-in/email' },
       createdAt: { gte: windowStartedAt },
       OR: identityFilters,
     },
