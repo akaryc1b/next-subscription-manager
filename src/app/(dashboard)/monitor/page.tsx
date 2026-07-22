@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { AlertTriangle, ChartNoAxesCombined } from 'lucide-react'
+import { AlertTriangle, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AccessLogsPanel,
@@ -56,10 +56,10 @@ export default function MonitorPage() {
   if (loading) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-          <ChartNoAxesCombined className="h-5 w-5 animate-pulse" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-secondary text-accent-primary">
+          <Activity className="h-4 w-4 animate-pulse" />
         </div>
-        <div className="text-sm text-foreground-muted">Loading analytics workspace…</div>
+        <div className="text-sm text-foreground-muted">Loading activity workspace…</div>
       </div>
     )
   }
@@ -77,7 +77,7 @@ export default function MonitorPage() {
       />
 
       {error && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-accent-error sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-xl border border-accent-error/30 bg-accent-error/10 p-4 text-accent-error sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4" />
             <span>{error}</span>
@@ -91,7 +91,7 @@ export default function MonitorPage() {
       <StatsGrid stats={stats} />
       <MonitorFiltersPanel filters={filters} onFiltersChange={setFilters} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-5 xl:grid-cols-2">
         <SecurityEventsPanel events={securityEvents} />
         <AccessLogsPanel logs={logs} />
       </div>
