@@ -1,6 +1,6 @@
 import {
+  Activity,
   CalendarDays,
-  ChartNoAxesCombined,
   CreditCard,
   LayoutDashboard,
   Layers3,
@@ -13,13 +13,14 @@ export interface NavItem {
   label: string
   icon: LucideIcon
   command: string
+  group: 'workspace' | 'system'
 }
 
 export const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, command: 'Subscription overview' },
-  { href: '/users', label: 'Subscriptions', icon: CreditCard, command: 'Subscription accounts' },
-  { href: '/calendar', label: 'Calendar', icon: CalendarDays, command: 'Renewal schedule' },
-  { href: '/configs', label: 'Configurations', icon: Layers3, command: 'Configuration library' },
-  { href: '/monitor', label: 'Analytics', icon: ChartNoAxesCombined, command: 'Traffic and security analytics' },
-  { href: '/settings', label: 'Settings', icon: Settings2, command: 'Workspace settings' },
+  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, command: 'Portfolio overview', group: 'workspace' },
+  { href: '/users', label: 'Subscriptions', icon: CreditCard, command: 'Accounts and access', group: 'workspace' },
+  { href: '/calendar', label: 'Renewals', icon: CalendarDays, command: 'Expiration schedule', group: 'workspace' },
+  { href: '/configs', label: 'Configurations', icon: Layers3, command: 'Delivery configurations', group: 'workspace' },
+  { href: '/monitor', label: 'Activity', icon: Activity, command: 'Usage and security', group: 'workspace' },
+  { href: '/settings', label: 'Settings', icon: Settings2, command: 'Workspace preferences', group: 'system' },
 ]
