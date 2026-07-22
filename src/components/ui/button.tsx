@@ -6,10 +6,10 @@ import { cn } from '@/lib/utils'
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'rounded-xl font-medium tracking-tight',
-    'transition-all duration-fast active:scale-[0.985]',
-    'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring',
-    'disabled:pointer-events-none disabled:opacity-50',
+    'rounded-lg font-medium tracking-[-0.01em]',
+    'transition-colors duration-fast',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background-primary',
+    'disabled:pointer-events-none disabled:opacity-45',
     '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   ].join(' '),
   {
@@ -17,14 +17,15 @@ const buttonVariants = cva(
       variant: {
         primary: [
           'border border-accent-primary bg-accent-primary text-accent-foreground',
-          'shadow-[0_8px_24px_rgba(139,92,246,0.2)] hover:-translate-y-px hover:bg-accent-primaryHover hover:shadow-[0_12px_30px_rgba(139,92,246,0.28)]',
+          'hover:border-accent-primaryHover hover:bg-accent-primaryHover',
+          'active:border-accent-primaryActive active:bg-accent-primaryActive',
         ].join(' '),
         secondary: [
-          'border border-border bg-background-tertiary text-foreground-primary shadow-sm backdrop-blur-xl',
+          'border border-border bg-background-tertiary text-foreground-primary',
           'hover:border-border-hover hover:bg-background-hover',
         ].join(' '),
         outline: [
-          'border border-border bg-transparent text-foreground-secondary',
+          'border border-border bg-background-secondary text-foreground-secondary',
           'hover:border-border-hover hover:bg-background-hover hover:text-foreground-primary',
         ].join(' '),
         ghost: [
@@ -32,16 +33,16 @@ const buttonVariants = cva(
           'hover:bg-background-hover hover:text-foreground-primary',
         ].join(' '),
         destructive: [
-          'border border-accent-error bg-accent-error text-white shadow-sm',
-          'hover:bg-accent-errorHover',
+          'border border-accent-error bg-accent-error text-white',
+          'hover:border-accent-errorHover hover:bg-accent-errorHover',
         ].join(' '),
         success: [
-          'border border-accent-success bg-accent-success text-white shadow-sm',
-          'hover:bg-accent-successHover',
+          'border border-accent-success bg-accent-success text-white',
+          'hover:border-accent-successHover hover:bg-accent-successHover',
         ].join(' '),
         warning: [
-          'border border-accent-warning bg-accent-warning text-white shadow-sm',
-          'hover:bg-accent-warningHover',
+          'border border-accent-warning bg-accent-warning text-white',
+          'hover:border-accent-warningHover hover:bg-accent-warningHover',
         ].join(' '),
         link: [
           'h-auto rounded-none border-none bg-transparent p-0 text-accent-primary underline-offset-4',
@@ -54,9 +55,9 @@ const buttonVariants = cva(
       },
       size: {
         sm: 'h-8 px-3 text-xs',
-        default: 'h-9 px-4 text-sm',
-        lg: 'h-10 px-5 text-sm',
-        xl: 'h-12 px-6 text-base',
+        default: 'h-9 px-3.5 text-[13px]',
+        lg: 'h-10 px-4 text-sm',
+        xl: 'h-11 px-5 text-sm',
         icon: 'h-9 w-9',
         'icon-sm': 'h-8 w-8',
         'icon-lg': 'h-10 w-10',
