@@ -152,19 +152,7 @@
   }
 
   .metric-strip {
-    @apply grid overflow-hidden rounded-xl border border-border bg-background-secondary sm:grid-cols-2 xl:grid-cols-4;
-  }
-
-  .metric-strip > * {
-    @apply border-b border-border-subtle sm:border-r xl:border-b-0;
-  }
-
-  .metric-strip > *:nth-child(2n) {
-    @apply sm:border-r-0 xl:border-r;
-  }
-
-  .metric-strip > *:last-child {
-    @apply border-b-0 border-r-0;
+    @apply grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border xl:grid-cols-4;
   }
 
   .section-label {
