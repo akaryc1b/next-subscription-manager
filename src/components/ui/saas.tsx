@@ -1,20 +1,18 @@
 'use client'
 
 import * as React from 'react'
-import { motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Card, CardContent } from '@/components/ui/card'
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'neutral'
 
 const badgeVariants: Record<BadgeVariant, string> = {
-  default: 'bg-accent-primary/10 text-accent-primary ring-accent-primary/20',
-  success: 'bg-accent-success/10 text-accent-success ring-accent-success/20',
-  warning: 'bg-accent-warning/10 text-accent-warning ring-accent-warning/20',
-  danger: 'bg-accent-error/10 text-accent-error ring-accent-error/20',
-  info: 'bg-accent-info/10 text-accent-info ring-accent-info/20',
-  neutral: 'bg-background-hover text-foreground-secondary ring-border',
+  default: 'border-accent-primary/20 bg-accent-primary/10 text-accent-primary',
+  success: 'border-accent-success/20 bg-accent-success/10 text-accent-success',
+  warning: 'border-accent-warning/20 bg-accent-warning/10 text-accent-warning',
+  danger: 'border-accent-error/20 bg-accent-error/10 text-accent-error',
+  info: 'border-accent-info/20 bg-accent-info/10 text-accent-info',
+  neutral: 'border-border bg-background-hover text-foreground-secondary',
 }
 
 export function Badge({
@@ -26,7 +24,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ring-1 ring-inset',
+        'inline-flex min-h-5 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-semibold leading-none',
         badgeVariants[variant],
         className
       )}
@@ -38,7 +36,7 @@ export function Badge({
 }
 
 export function Container({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('mx-auto w-full max-w-[1600px]', className)} {...props} />
+  return <div className={cn('mx-auto w-full max-w-[1440px]', className)} {...props} />
 }
 
 interface PageHeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, 'title'> {
@@ -61,35 +59,28 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-border bg-background-tertiary/80 px-5 py-5 shadow-sm backdrop-blur-xl sm:px-6 sm:py-6',
+        'flex flex-col gap-4 border-b border-border-subtle pb-5 sm:flex-row sm:items-end sm:justify-between lg:pb-6',
         className
       )}
       {...props}
     >
-      <div className="pointer-events-none absolute inset-x-16 -top-24 h-40 bg-accent-primary/10 blur-3xl" />
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          {eyebrow && (
-            <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent-primary">
-              {Icon && (
-                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-accent-primary/10">
-                  <Icon className="h-3.5 w-3.5" />
-                </span>
-              )}
-              {eyebrow}
-            </div>
-          )}
-          <h1 className="text-xl font-semibold tracking-[-0.025em] text-foreground-primary sm:text-2xl">
-            {title}
-          </h1>
-          {description && (
-            <div className="mt-1.5 max-w-3xl text-sm leading-6 text-foreground-muted">
-              {description}
-            </div>
-          )}
-        </div>
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+      <div className="min-w-0">
+        {eyebrow && (
+          <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground-muted">
+            {Icon && <Icon className="h-3.5 w-3.5 text-accent-primary" />}
+            {eyebrow}
+          </div>
+        )}
+        <h1 className="text-[26px] font-semibold leading-tight tracking-[-0.035em] text-foreground-primary sm:text-[30px]">
+          {title}
+        </h1>
+        {description && (
+          <div className="mt-1.5 max-w-3xl text-[13px] leading-5 text-foreground-muted sm:text-sm">
+            {description}
+          </div>
+        )}
       </div>
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
     </header>
   )
 }
@@ -104,11 +95,11 @@ interface StatCardProps {
 }
 
 const toneClasses = {
-  primary: 'bg-accent-primary/10 text-accent-primary',
-  success: 'bg-accent-success/10 text-accent-success',
-  warning: 'bg-accent-warning/10 text-accent-warning',
-  danger: 'bg-accent-error/10 text-accent-error',
-  info: 'bg-accent-info/10 text-accent-info',
+  primary: 'text-accent-primary',
+  success: 'text-accent-success',
+  warning: 'text-accent-warning',
+  danger: 'text-accent-error',
+  info: 'text-accent-info',
 }
 
 export function StatCard({
@@ -120,29 +111,21 @@ export function StatCard({
   className,
 }: StatCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28 }}
-      className={className}
+    <div
+      className={cn(
+        'group h-full min-h-[112px] bg-background-secondary p-4 transition-colors hover:bg-background-hover sm:p-5',
+        className
+      )}
     >
-      <Card className="group h-full overflow-hidden">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-foreground-muted">{label}</p>
-              <div className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-foreground-primary sm:text-3xl">
-                {value}
-              </div>
-            </div>
-            <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl', toneClasses[tone])}>
-              <Icon className="h-4 w-4" />
-            </div>
-          </div>
-          {description && <div className="mt-3 text-xs leading-5 text-foreground-muted">{description}</div>}
-        </CardContent>
-      </Card>
-    </motion.div>
+      <div className="flex items-center justify-between gap-3">
+        <p className="truncate text-[11px] font-medium text-foreground-muted">{label}</p>
+        <Icon className={cn('h-4 w-4 shrink-0', toneClasses[tone])} />
+      </div>
+      <div className="mt-3 tabular-nums text-2xl font-semibold leading-none tracking-[-0.035em] text-foreground-primary sm:text-[28px]">
+        {value}
+      </div>
+      {description && <div className="mt-2 text-[11px] leading-4 text-foreground-muted">{description}</div>}
+    </div>
   )
 }
 
@@ -157,12 +140,12 @@ export function EmptyState({ icon: Icon, title, description, action, className, 
   return (
     <div
       className={cn(
-        'flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background-secondary/40 px-6 py-8 text-center',
+        'flex min-h-40 flex-col items-center justify-center px-6 py-10 text-center',
         className
       )}
       {...props}
     >
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-background-hover text-foreground-muted">
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-tertiary text-foreground-muted">
         <Icon className="h-4 w-4" />
       </div>
       <div className="text-sm font-medium text-foreground-primary">{title}</div>
@@ -189,12 +172,15 @@ export function Section({
   ...props
 }: SectionProps) {
   return (
-    <section className={cn('rounded-2xl border border-border bg-background-tertiary/70 shadow-sm backdrop-blur-xl', className)} {...props}>
+    <section
+      className={cn('overflow-hidden rounded-xl border border-border bg-background-secondary', className)}
+      {...props}
+    >
       {(title || description || actions) && (
-        <div className="flex flex-col gap-3 border-b border-border/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="flex flex-col gap-3 border-b border-border-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0">
-            {title && <h2 className="text-sm font-semibold tracking-tight text-foreground-primary">{title}</h2>}
-            {description && <div className="mt-1 text-xs leading-5 text-foreground-muted">{description}</div>}
+            {title && <h2 className="text-[15px] font-semibold tracking-[-0.015em] text-foreground-primary">{title}</h2>}
+            {description && <div className="mt-0.5 text-xs leading-5 text-foreground-muted">{description}</div>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </div>

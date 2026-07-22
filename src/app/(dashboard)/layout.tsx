@@ -36,16 +36,14 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="relative flex h-[100dvh] min-h-0 overflow-hidden p-2 sm:p-3 lg:p-4">
-      <div className="liquid-orb -left-32 -top-32 h-72 w-72 bg-accent-primary/20" />
-      <div className="liquid-orb -bottom-40 -right-32 h-80 w-80 bg-accent-info/10" />
-      <div className="hidden lg:relative lg:z-10 lg:block">
+    <div className="workspace-shell">
+      <div className="hidden shrink-0 lg:block">
         <Sidebar />
       </div>
-      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col gap-2 sm:gap-3 lg:gap-4 lg:pl-4">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Header />
-        <main className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain rounded-2xl border border-border bg-background-secondary/80 p-3 pb-[calc(env(safe-area-inset-bottom)+6.25rem)] shadow-2xl backdrop-blur-2xl sm:p-4 sm:pb-[calc(env(safe-area-inset-bottom)+6.25rem)] lg:p-5 lg:pb-5 xl:p-6">
-          {children}
+        <main className="workspace-main pb-[calc(env(safe-area-inset-bottom)+5.75rem)] lg:pb-0">
+          <div className="workspace-canvas">{children}</div>
         </main>
       </div>
       <MobileBottomNav />

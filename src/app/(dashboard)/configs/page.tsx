@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -25,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge, EmptyState, PageHeader, StatCard } from '@/components/ui/saas'
+import { Badge, EmptyState, PageHeader, Section, StatCard } from '@/components/ui/saas'
 
 interface Config {
   id: string
@@ -238,8 +237,8 @@ export default function ConfigsPage() {
   if (loading) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-          <Braces className="h-5 w-5 animate-pulse" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-secondary text-accent-primary">
+          <Braces className="h-4 w-4 animate-pulse" />
         </div>
         <div className="text-sm text-foreground-muted">Loading configuration library…</div>
       </div>
@@ -252,7 +251,7 @@ export default function ConfigsPage() {
         eyebrow="Delivery infrastructure"
         icon={Braces}
         title="Configurations"
-        description="Maintain the existing YAML assets assigned to subscription accounts."
+        description="Manage the YAML assets delivered to subscription accounts."
         actions={
           <>
             <Button variant="secondary" size="sm" onClick={() => void fetchConfigs()} disabled={refreshing}>
@@ -268,89 +267,89 @@ export default function ConfigsPage() {
       />
 
       {error && !dialogOpen && (
-        <div className="flex items-center gap-2 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
+        <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
           <AlertTriangle className="h-4 w-4" />
           <span>{error}</span>
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="metric-strip" aria-label="Configuration summary">
         <StatCard label="Configuration assets" value={configs.length.toLocaleString()} description="Total YAML documents" icon={FileText} />
         <StatCard label="Active" value={summary.active.toLocaleString()} description="Available for delivery" icon={CheckCircle2} tone="success" />
         <StatCard label="Source lines" value={summary.lines.toLocaleString()} description="Across existing assets" icon={Code2} tone="info" />
         <StatCard label="Storage" value={formatBytes(summary.bytes)} description="Current YAML payload size" icon={FileCode2} tone="primary" />
       </section>
 
-      {configs.length === 0 ? (
-        <EmptyState
-          icon={FileCode2}
-          title="No configurations yet"
-          description="Create a YAML configuration to make it available for subscription assignment."
-          action={<Button size="sm" onClick={openCreateDialog}><Plus />New configuration</Button>}
-        />
-      ) : (
-        <section className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
-          {configs.map((config) => {
+      <Section
+        title="Configuration library"
+        description="Review status, ownership, size, and source content without switching between cards."
+        contentClassName="p-0"
+      >
+        {configs.length === 0 ? (
+          <EmptyState
+            icon={FileCode2}
+            title="No configurations yet"
+            description="Create a YAML configuration to make it available for subscription assignment."
+            action={<Button size="sm" onClick={openCreateDialog}><Plus />New configuration</Button>}
+          />
+        ) : (
+          configs.map((config) => {
             const stats = getContentStats(config.content)
             return (
-              <Card key={config.id} className="group overflow-hidden hover:-translate-y-0.5 hover:border-border-hover">
-                <CardContent className="p-4 sm:p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary ring-1 ring-inset ring-accent-primary/15">
-                        <FileCode2 className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-foreground-primary">{config.name}</div>
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <Badge variant={config.isActive ? 'success' : 'neutral'}>{config.isActive ? 'Active' : 'Disabled'}</Badge>
-                          <Badge variant="neutral">YAML</Badge>
-                        </div>
-                      </div>
+              <article key={config.id} className="border-b border-border-subtle last:border-b-0">
+                <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 lg:flex-row lg:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background-tertiary text-accent-primary">
+                      <FileCode2 className="h-4 w-4" />
                     </div>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      <Button variant="ghost" size="icon-sm" onClick={() => void handleToggleActive(config)} title={config.isActive ? 'Disable configuration' : 'Enable configuration'}>
-                        <Power className={config.isActive ? 'text-accent-success' : undefined} />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(config)} title="Edit configuration">
-                        <Pencil />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => void handleDelete(config.id)} title="Delete configuration" className="hover:text-accent-error">
-                        <Trash2 />
-                      </Button>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium text-foreground-primary">{config.name}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <Badge variant={config.isActive ? 'success' : 'neutral'}>{config.isActive ? 'Active' : 'Disabled'}</Badge>
+                        <Badge variant="neutral">YAML</Badge>
+                        <span className="truncate text-[10px] text-foreground-muted">{config.user.email}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Lines</div>
-                      <div className="mt-1 text-sm font-semibold">{stats.lines.toLocaleString()}</div>
+                  <div className="grid grid-cols-3 gap-4 text-[11px] lg:w-[22rem]">
+                    <div>
+                      <div className="section-label">Lines</div>
+                      <div className="mt-1 tabular-nums font-medium text-foreground-secondary">{stats.lines.toLocaleString()}</div>
                     </div>
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Size</div>
-                      <div className="mt-1 text-sm font-semibold">{formatBytes(stats.bytes)}</div>
+                    <div>
+                      <div className="section-label">Size</div>
+                      <div className="mt-1 tabular-nums font-medium text-foreground-secondary">{formatBytes(stats.bytes)}</div>
                     </div>
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Created</div>
-                      <div className="mt-1 truncate text-sm font-semibold">{formatDate(config.createdAt)}</div>
+                    <div>
+                      <div className="section-label">Created</div>
+                      <div className="mt-1 truncate tabular-nums font-medium text-foreground-secondary">{formatDate(config.createdAt)}</div>
                     </div>
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-xl bg-[#0d0d10] ring-1 ring-inset ring-border/70">
-                    <div className="flex items-center justify-between border-b border-border/70 px-3 py-2 text-[10px] text-foreground-muted">
-                      <span>Preview</span>
-                      <span>{config.user.email}</span>
-                    </div>
-                    <pre className="max-h-28 overflow-hidden whitespace-pre-wrap break-all p-3 font-mono text-[10px] leading-5 text-foreground-muted">
-                      {config.content.slice(0, 360)}
-                    </pre>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button variant="ghost" size="icon-sm" onClick={() => void handleToggleActive(config)} title={config.isActive ? 'Disable configuration' : 'Enable configuration'}>
+                      <Power className={config.isActive ? 'text-accent-success' : undefined} />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(config)} title="Edit configuration">
+                      <Pencil />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => void handleDelete(config.id)} title="Delete configuration" className="hover:text-accent-error">
+                      <Trash2 />
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+
+                <div className="border-t border-border-subtle bg-background-tertiary px-4 py-3 sm:px-5">
+                  <pre className="max-h-24 overflow-hidden whitespace-pre-wrap break-all font-mono text-[10px] leading-5 text-foreground-muted">
+                    {config.content.slice(0, 420)}
+                  </pre>
+                </div>
+              </article>
             )
-          })}
-        </section>
-      )}
+          })
+        )}
+      </Section>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl p-0">
@@ -359,7 +358,7 @@ export default function ConfigsPage() {
           </DialogHeader>
           <form onSubmit={editingConfig ? handleUpdate : handleCreate} className="space-y-5 p-5">
             {error && (
-              <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/10 p-3 text-sm text-accent-error">
+              <div className="flex items-center gap-2 rounded-lg border border-accent-error/30 bg-accent-error/10 p-3 text-sm text-accent-error">
                 <AlertTriangle className="h-4 w-4" />
                 <span>{error}</span>
               </div>
@@ -385,13 +384,13 @@ export default function ConfigsPage() {
                 id="content"
                 value={formData.content}
                 onChange={(event) => setFormData({ ...formData, content: event.target.value })}
-                className="min-h-[24rem] w-full resize-y rounded-xl border border-border bg-[#0d0d10] p-4 font-mono text-xs leading-6 text-foreground-secondary shadow-inner placeholder:text-foreground-placeholder focus:border-border-strong focus:outline-none focus:ring-4 focus:ring-ring"
+                className="min-h-[24rem] w-full resize-y rounded-lg border border-border bg-background-primary p-4 font-mono text-xs leading-6 text-foreground-secondary placeholder:text-foreground-placeholder focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-ring"
                 required
                 spellCheck={false}
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit">{editingConfig ? 'Save changes' : 'Create configuration'}</Button>
             </div>

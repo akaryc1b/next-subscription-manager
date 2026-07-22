@@ -1,21 +1,12 @@
-import * as React from 'react';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from 'react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-/**
- * Liquid glass dialog component
- *
- * 设计特点:
- * - 与全局 glass-card / glass-panel 统一的圆角和毛玻璃
- * - 柔和阴影与边框高光
- * - 保留轻量终端标题装饰
- */
-
-const Dialog = DialogPrimitive.Root;
-const DialogTrigger = DialogPrimitive.Trigger;
-const DialogPortal = DialogPrimitive.Portal;
-const DialogClose = DialogPrimitive.Close;
+const Dialog = DialogPrimitive.Root
+const DialogTrigger = DialogPrimitive.Trigger
+const DialogPortal = DialogPrimitive.Portal
+const DialogClose = DialogPrimitive.Close
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -24,15 +15,14 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-overlay backdrop-blur-sm',
-      // 动画
+      'fixed inset-0 z-50 bg-overlay',
       'data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out',
       className
     )}
     {...props}
   />
-));
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
@@ -46,12 +36,7 @@ const DialogContent = React.forwardRef<
         'fixed left-[50%] top-[50%] z-50 grid w-[calc(100vw-1.5rem)] max-w-lg sm:w-full',
         'max-h-[calc(100dvh-1.5rem)] overflow-y-auto',
         'translate-x-[-50%] translate-y-[-50%]',
-        // Liquid glass window style
-        'rounded-3xl border border-border bg-background-tertiary text-foreground-primary backdrop-blur-2xl',
-        // Soft app-wide glass shadow
-        'shadow-2xl shadow-black/20',
-        'before:pointer-events-none before:absolute before:inset-0 before:rounded-3xl before:shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]',
-        // 动画
+        'rounded-xl border border-border bg-background-tertiary text-foreground-primary shadow-2xl shadow-black/35',
         'data-[state=open]:animate-scale-in data-[state=closed]:animate-fade-out',
         className
       )}
@@ -60,11 +45,11 @@ const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         className={cn(
-          'absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full',
-          'border border-border bg-background-secondary text-foreground-muted backdrop-blur-xl',
-          'hover:bg-background-hover hover:text-accent-error hover:border-border-hover',
-          'transition-all duration-fast',
-          'focus:outline-none focus-visible:ring-4 focus-visible:ring-ring'
+          'absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg',
+          'border border-border bg-background-secondary text-foreground-muted',
+          'hover:border-border-hover hover:bg-background-hover hover:text-foreground-primary',
+          'transition-colors duration-fast',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'
         )}
       >
         <X className="h-4 w-4" />
@@ -72,8 +57,8 @@ const DialogContent = React.forwardRef<
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-));
-DialogContent.displayName = DialogPrimitive.Content.displayName;
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({
   className,
@@ -82,24 +67,23 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col space-y-1.5 p-5 pr-14',
-      'border-b border-border bg-background-secondary',
+      'flex flex-col space-y-1.5 border-b border-border-subtle px-5 py-4 pr-14',
       className
     )}
     {...props}
   >
     {children}
   </div>
-);
-DialogHeader.displayName = 'DialogHeader';
+)
+DialogHeader.displayName = 'DialogHeader'
 
 const DialogBody = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn('p-4', className)} {...props} />
-);
-DialogBody.displayName = 'DialogBody';
+)
+DialogBody.displayName = 'DialogBody'
 
 const DialogFooter = ({
   className,
@@ -107,36 +91,29 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'flex flex-col-reverse gap-2 p-5 sm:flex-row sm:justify-end',
-      'border-t border-border bg-background-secondary',
+      'flex flex-col-reverse gap-2 border-t border-border-subtle p-5 sm:flex-row sm:justify-end',
       className
     )}
     {...props}
   />
-);
-DialogFooter.displayName = 'DialogFooter';
+)
+DialogFooter.displayName = 'DialogFooter'
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, children, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight uppercase',
-      'text-foreground-primary',
+      'text-[15px] font-semibold leading-none tracking-[-0.015em] text-foreground-primary',
       className
     )}
     {...props}
-  >
-    {/* ASCII 装饰 */}
-    <span className="text-foreground-muted mr-2">›</span>
-    {children}
-  </DialogPrimitive.Title>
-));
-DialogTitle.displayName = DialogPrimitive.Title.displayName;
+  />
+))
+DialogTitle.displayName = DialogPrimitive.Title.displayName
 
-// 简洁标题（不带 ASCII 装饰）
 const DialogTitleSimple = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -144,14 +121,13 @@ const DialogTitleSimple = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-lg font-semibold leading-none tracking-tight uppercase',
-      'text-foreground-primary',
+      'text-[15px] font-semibold leading-none tracking-[-0.015em] text-foreground-primary',
       className
     )}
     {...props}
   />
-));
-DialogTitleSimple.displayName = 'DialogTitleSimple';
+))
+DialogTitleSimple.displayName = 'DialogTitleSimple'
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
@@ -159,11 +135,11 @@ const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-foreground-secondary mt-1', className)}
+    className={cn('mt-1 text-[13px] text-foreground-muted', className)}
     {...props}
   />
-));
-DialogDescription.displayName = DialogPrimitive.Description.displayName;
+))
+DialogDescription.displayName = DialogPrimitive.Description.displayName
 
 export {
   Dialog,
@@ -178,4 +154,4 @@ export {
   DialogTitle,
   DialogTitleSimple,
   DialogDescription,
-};
+}
