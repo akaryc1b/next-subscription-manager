@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import {
   Activity,
   ArrowUpRight,
@@ -238,8 +237,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-          <Sparkles className="h-5 w-5 animate-pulse" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-secondary text-accent-primary">
+          <Sparkles className="h-4 w-4 animate-pulse" />
         </div>
         <div className="text-sm text-foreground-muted">Loading subscription workspace…</div>
       </div>
@@ -249,10 +248,10 @@ export default function DashboardPage() {
   return (
     <div className="saas-page">
       <PageHeader
-        eyebrow="Personal subscription workspace"
+        eyebrow="Portfolio operations"
         icon={CreditCard}
-        title="Your subscription assets"
-        description="A focused view of subscription accounts, active configurations, usage, renewal dates, and security health."
+        title="Subscription workspace"
+        description="Review renewals, delivery activity, configurations, and security signals from one operational view."
         actions={
           <Button onClick={() => void fetchData()} variant="secondary" size="sm" disabled={refreshing}>
             <RefreshCw className={refreshing ? 'animate-spin' : ''} />
@@ -262,7 +261,7 @@ export default function DashboardPage() {
       />
 
       {error && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <CircleAlert className="h-4 w-4" />
             <span>{error}</span>
@@ -271,98 +270,74 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="metric-strip" aria-label="Portfolio metrics">
         <Link href="/users" className="min-w-0">
-          <StatCard label="Subscription accounts" value={stats.subscriptions.toLocaleString()} description={`${stats.users.toLocaleString()} managed accounts`} icon={CreditCard} />
+          <StatCard
+            label="Subscriptions"
+            value={stats.subscriptions.toLocaleString()}
+            description={`${stats.users.toLocaleString()} managed accounts`}
+            icon={CreditCard}
+          />
         </Link>
         <Link href="/monitor" className="min-w-0">
-          <StatCard label="Requests today" value={stats.todayAccesses.toLocaleString()} description={`${health.requestsPerSubscription} per subscription`} icon={Activity} tone="info" />
+          <StatCard
+            label="Requests today"
+            value={stats.todayAccesses.toLocaleString()}
+            description={`${health.requestsPerSubscription} per subscription`}
+            icon={Activity}
+            tone="info"
+          />
         </Link>
         <Link href="/configs" className="min-w-0">
-          <StatCard label="Configuration assets" value={stats.configs.toLocaleString()} description={`${health.configsPerSubscription} per subscription`} icon={FileText} tone="success" />
+          <StatCard
+            label="Configurations"
+            value={stats.configs.toLocaleString()}
+            description={`${health.configsPerSubscription} per subscription`}
+            icon={FileText}
+            tone="success"
+          />
         </Link>
         <Link href="/monitor" className="min-w-0">
-          <StatCard label="Security signals" value={health.riskSignals.toLocaleString()} description={`${stats.criticalSecurityEvents} critical · ${stats.warningSecurityEvents} warning`} icon={ShieldAlert} tone={health.riskSignals > 0 ? 'warning' : 'success'} />
+          <StatCard
+            label="Risk signals"
+            value={health.riskSignals.toLocaleString()}
+            description={`${stats.criticalSecurityEvents} critical · ${stats.warningSecurityEvents} warning`}
+            icon={ShieldAlert}
+            tone={health.riskSignals > 0 ? 'warning' : 'success'}
+          />
         </Link>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <Section
-          title="Activity pulse"
-          description="Recent subscription delivery activity from existing access logs."
-          actions={<Button asChild variant="ghost" size="sm"><Link href="/monitor">Full analytics<ArrowUpRight /></Link></Button>}
-          contentClassName="space-y-2"
-        >
-          {recentActivity.length === 0 ? (
-            <EmptyState icon={Clock3} title="No recent subscription activity" description="New requests will appear here when a subscription link is accessed." />
-          ) : (
-            recentActivity.map((activity, index) => (
-              <motion.div
-                key={activity.id}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.035 }}
-                className="group flex items-center gap-3 rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70 hover:bg-background-hover"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary"><Activity className="h-4 w-4" /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground-primary">{activity.email}</div>
-                  <div className="mt-0.5 truncate text-xs text-foreground-muted">{activity.configName}</div>
-                </div>
-                <div className="shrink-0 text-[11px] text-foreground-muted">{getRelativeTime(activity.accessedAt)}</div>
-              </motion.div>
-            ))
-          )}
-        </Section>
-
-        <Section title="Subscription health" description="Derived only from current usage and security totals.">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-success/10 text-accent-success"><ShieldCheck className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-sm font-medium">Portfolio status</div>
-                  <div className="mt-0.5 text-xs text-foreground-muted">Based on current security signals</div>
-                </div>
-              </div>
-              <Badge variant={health.riskSignals > 0 ? 'warning' : 'success'}>{health.riskSignals > 0 ? 'Review' : 'Healthy'}</Badge>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70">
-                <Gauge className="h-4 w-4 text-accent-info" />
-                <div className="mt-3 text-xl font-semibold tracking-tight">{health.requestsPerSubscription}</div>
-                <div className="mt-1 text-[11px] text-foreground-muted">Requests per subscription today</div>
-              </div>
-              <div className="rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70">
-                <FileText className="h-4 w-4 text-accent-primary" />
-                <div className="mt-3 text-xl font-semibold tracking-tight">{health.configsPerSubscription}</div>
-                <div className="mt-1 text-[11px] text-foreground-muted">Configurations per subscription</div>
-              </div>
-            </div>
-          </div>
-        </Section>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-2">
-        <Section
-          title="Upcoming renewals"
-          description="Nearest dates from existing subscription expiration fields."
-          actions={<Button asChild variant="ghost" size="sm"><Link href="/calendar">Open calendar<ArrowUpRight /></Link></Button>}
-          contentClassName="space-y-2"
+          title="Renewal queue"
+          description="Nearest upcoming expiration dates that need attention."
+          actions={
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/calendar">View renewals<ArrowUpRight /></Link>
+            </Button>
+          }
+          contentClassName="p-0"
         >
           {upcomingRenewals.length === 0 ? (
-            <EmptyState icon={CalendarDays} title="No upcoming renewals" description="No dated subscription accounts are currently scheduled." />
+            <EmptyState
+              icon={CalendarDays}
+              title="No upcoming renewals"
+              description="No dated subscription accounts are currently scheduled."
+            />
           ) : (
             upcomingRenewals.map((renewal) => {
               const days = getDaysUntil(renewal.expiresAt)
               return (
-                <div key={renewal.id} className="flex items-center gap-3 rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary"><CalendarDays className="h-4 w-4" /></div>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground-primary">{renewal.email}</div>
-                    <div className="mt-0.5 text-xs text-foreground-muted">{formatRenewalDate(renewal.expiresAt)}</div>
+                <div key={renewal.id} className="data-row min-h-[60px]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background-tertiary text-foreground-muted">
+                    <CalendarDays className="h-3.5 w-3.5" />
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-medium text-foreground-primary">{renewal.email}</div>
+                    <div className="mt-0.5 tabular-nums text-[11px] text-foreground-muted">{formatRenewalDate(renewal.expiresAt)}</div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
                     {(!renewal.isActive || renewal.isBanned) && <Badge variant="neutral">Inactive</Badge>}
                     <Badge variant={days <= 7 ? 'warning' : 'default'}>{days === 0 ? 'Today' : `${days}d`}</Badge>
                   </div>
@@ -373,22 +348,110 @@ export default function DashboardPage() {
         </Section>
 
         <Section
-          title="Security activity"
-          description={`${stats.securityEvents.toLocaleString()} recorded security events in the current statistics.`}
-          actions={<Button asChild variant="ghost" size="sm"><Link href="/monitor">View all<ArrowUpRight /></Link></Button>}
-          contentClassName="space-y-2"
+          title="Portfolio health"
+          description="Current usage ratios and security posture."
+          contentClassName="p-0"
+        >
+          <div className="flex items-center justify-between gap-4 p-4 sm:p-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className={health.riskSignals > 0
+                ? 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-warning/10 text-accent-warning'
+                : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-success/10 text-accent-success'}
+              >
+                {health.riskSignals > 0 ? <ShieldAlert className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[13px] font-medium text-foreground-primary">
+                  {health.riskSignals > 0 ? 'Review required' : 'No active warnings'}
+                </div>
+                <div className="mt-0.5 text-[11px] text-foreground-muted">Based on warning and critical events</div>
+              </div>
+            </div>
+            <Badge variant={health.riskSignals > 0 ? 'warning' : 'success'}>
+              {health.riskSignals > 0 ? `${health.riskSignals} signals` : 'Healthy'}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-2 border-t border-border-subtle">
+            <div className="border-r border-border-subtle p-4 sm:p-5">
+              <Gauge className="h-4 w-4 text-accent-info" />
+              <div className="mt-3 tabular-nums text-2xl font-semibold tracking-[-0.035em]">{health.requestsPerSubscription}</div>
+              <div className="mt-1 text-[11px] leading-4 text-foreground-muted">Requests per subscription today</div>
+            </div>
+            <div className="p-4 sm:p-5">
+              <FileText className="h-4 w-4 text-accent-primary" />
+              <div className="mt-3 tabular-nums text-2xl font-semibold tracking-[-0.035em]">{health.configsPerSubscription}</div>
+              <div className="mt-1 text-[11px] leading-4 text-foreground-muted">Configurations per subscription</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-3 text-[11px] text-foreground-muted sm:px-5">
+            <span>Total security events</span>
+            <span className="tabular-nums font-medium text-foreground-secondary">{stats.securityEvents.toLocaleString()}</span>
+          </div>
+        </Section>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Section
+          title="Recent delivery activity"
+          description="Latest subscription configuration requests."
+          actions={
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/monitor">View activity<ArrowUpRight /></Link>
+            </Button>
+          }
+          contentClassName="p-0"
+        >
+          {recentActivity.length === 0 ? (
+            <EmptyState
+              icon={Clock3}
+              title="No recent activity"
+              description="New requests will appear here when a subscription link is accessed."
+            />
+          ) : (
+            recentActivity.map((activity) => (
+              <div key={activity.id} className="data-row">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary">
+                  <Activity className="h-3.5 w-3.5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-medium text-foreground-primary">{activity.email}</div>
+                  <div className="mt-0.5 truncate text-[11px] text-foreground-muted">{activity.configName}</div>
+                </div>
+                <div className="shrink-0 tabular-nums text-[10px] text-foreground-muted">{getRelativeTime(activity.accessedAt)}</div>
+              </div>
+            ))
+          )}
+        </Section>
+
+        <Section
+          title="Security events"
+          description={`${stats.securityEvents.toLocaleString()} events recorded in current statistics.`}
+          actions={
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/monitor">View security<ArrowUpRight /></Link>
+            </Button>
+          }
+          contentClassName="p-0"
         >
           {securityEvents.length === 0 ? (
-            <EmptyState icon={ShieldCheck} title="No recent security events" description="The current event feed is clear." />
+            <EmptyState
+              icon={ShieldCheck}
+              title="No recent security events"
+              description="The current event feed is clear."
+            />
           ) : (
             securityEvents.map((event) => (
-              <div key={event.id} className="flex flex-col gap-2 rounded-xl bg-background-secondary/65 p-3 ring-1 ring-inset ring-border/70 sm:flex-row sm:items-center">
-                <Badge variant={getSeverityVariant(event.severity)}>{event.severity}</Badge>
+              <div key={event.id} className="data-row">
+                <Badge variant={getSeverityVariant(event.severity)} className="shrink-0">{event.severity}</Badge>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-foreground-primary">{event.message || eventLabels[event.type] || event.type}</div>
-                  <div className="mt-0.5 text-xs text-foreground-muted">{event.ipAddress}</div>
+                  <div className="truncate text-[13px] font-medium text-foreground-primary">
+                    {event.message || eventLabels[event.type] || event.type}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] text-foreground-muted">{event.ipAddress}</div>
                 </div>
-                <div className="shrink-0 text-[11px] text-foreground-muted">{getRelativeTime(event.createdAt)}</div>
+                <div className="shrink-0 tabular-nums text-[10px] text-foreground-muted">{getRelativeTime(event.createdAt)}</div>
               </div>
             ))
           )}
