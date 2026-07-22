@@ -67,6 +67,7 @@
       "picomatch@<2.3.2": "2.3.2",
       "picomatch@>=4.0.0 <4.0.4": "4.0.4",
       "postcss@<8.5.10": "8.5.14",
+      "sharp": "0.35.3",
       "@peculiar/asn1-android": "2.8.0",
       "@peculiar/asn1-ecc": "2.8.0",
       "@peculiar/asn1-rsa": "2.8.0",
