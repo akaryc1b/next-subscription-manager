@@ -1,510 +1,449 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Shield,
-  Key,
-  Github,
-  Terminal,
-  UserCog,
   AlertTriangle,
+  Bell,
   Check,
-  Plus,
-  Palette,
-  Sun,
+  Database,
+  Github,
+  Key,
+  Laptop,
   Moon,
-  Monitor,
-} from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
-import { useTheme } from '@/components/theme-provider';
-
-/**
- * Terminal CLI Settings Page
- *
- * 设计特点:
- * - 命令行风格认证方式列表
- * - ASCII 状态指示器
- * - 终端风格操作按钮
- */
+  Palette,
+  Plus,
+  Shield,
+  Sun,
+  TerminalSquare,
+  UserRound,
+} from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
+import { useTheme } from '@/components/theme-provider'
+import { Button } from '@/components/ui/button'
+import { Badge, EmptyState, PageHeader, Section } from '@/components/ui/saas'
+import { cn } from '@/lib/utils'
 
 interface AuthMethod {
-  type: string;
-  enabled: boolean;
-  email?: string;
-  createdAt: string;
+  type: string
+  enabled: boolean
+  email?: string
+  createdAt: string
 }
 
-// 获取认证方式图标
+const settingsNavigation = [
+  { href: '#profile', label: 'Profile', description: 'Workspace identity', icon: UserRound },
+  { href: '#security', label: 'Security', description: 'Authentication methods', icon: Shield },
+  { href: '#appearance', label: 'Appearance', description: 'Theme preferences', icon: Palette },
+  { href: '#notifications', label: 'Notifications', description: 'System delivery', icon: Bell },
+  { href: '#data', label: 'Data', description: 'Storage and ownership', icon: Database },
+]
+
 function getMethodIcon(type: string) {
   switch (type) {
     case 'password':
-      return <Shield className="h-4 w-4" />;
+      return Shield
     case 'passkey':
-      return <Key className="h-4 w-4" />;
+      return Key
     case 'github':
-      return <Github className="h-4 w-4" />;
+      return Github
     default:
-      return null;
+      return Shield
   }
 }
 
-// 获取认证方式名称
 function getMethodName(type: string) {
   switch (type) {
     case 'password':
-      return 'PASSWORD';
+      return 'Password'
     case 'passkey':
-      return 'PASSKEY';
+      return 'Passkey'
     case 'github':
-      return 'GITHUB';
+      return 'GitHub'
     default:
-      return type.toUpperCase();
+      return type
   }
 }
 
-// 格式化日期
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-  });
+  })
 }
 
 export default function SettingsPage() {
-  const { data: session } = authClient.useSession();
-  const { mode, style, setMode, setStyle } = useTheme();
-  const searchParams = useSearchParams();
-  const [methods, setMethods] = useState<AuthMethod[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const { data: session } = authClient.useSession()
+  const { mode, style, setMode, setStyle } = useTheme()
+  const searchParams = useSearchParams()
+  const [methods, setMethods] = useState<AuthMethod[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  const fetchAuthMethods = useCallback(async () => {
+    if (!session?.user?.id) return
+
+    try {
+      const response = await fetch(`/api/users/${session.user.id}/auth-methods`)
+      const data = await response.json()
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setMethods(data.methods)
+      }
+    } catch {
+      setError('Failed to fetch authentication methods')
+    } finally {
+      setLoading(false)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchAuthMethods();
-    }
+    if (session?.user?.id) void fetchAuthMethods()
 
-    // 处理URL参数
-    const errorParam = searchParams.get('error');
-    const successParam = searchParams.get('success');
+    const errorParam = searchParams.get('error')
+    const successParam = searchParams.get('success')
 
     if (errorParam) {
       const errorMessages: Record<string, string> = {
         invalid_request: 'Invalid request',
-        invalid_state: 'Security verification failed, please retry',
-        not_authenticated: 'Please login first',
-        session_expired: 'Session expired, please login again',
-        token_exchange_failed: 'GitHub authorization failed',
-        failed_to_get_user: 'Failed to get GitHub user info',
-        account_already_linked: 'This GitHub account is already linked to another user',
-        callback_failed: 'Binding failed, please retry',
-      };
-      setError(errorMessages[errorParam] || 'Operation failed');
+        invalid_state: 'Security verification failed. Please retry.',
+        not_authenticated: 'Please sign in first.',
+        session_expired: 'Your session expired. Please sign in again.',
+        token_exchange_failed: 'GitHub authorization failed.',
+        failed_to_get_user: 'Failed to retrieve GitHub account information.',
+        account_already_linked: 'This GitHub account is linked to another user.',
+        callback_failed: 'Account linking failed. Please retry.',
+      }
+      setError(errorMessages[errorParam] || 'Operation failed')
     }
 
     if (successParam === 'github_linked') {
-      setSuccess('GitHub account linked successfully!');
-      // 刷新认证方式列表
-      if (session?.user?.id) {
-        fetchAuthMethods();
-      }
+      setSuccess('GitHub account linked successfully.')
+      if (session?.user?.id) void fetchAuthMethods()
     }
-  }, [session, searchParams]);
-
-  const fetchAuthMethods = async () => {
-    try {
-      const res = await fetch(
-        `/api/users/${session?.user?.id}/auth-methods`
-      );
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setMethods(data.methods);
-      }
-    } catch (err) {
-      setError('Failed to fetch auth methods');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [session?.user?.id, searchParams, fetchAuthMethods])
 
   const handleBindPasskey = async () => {
-    setError('');
-    setSuccess('');
+    setError('')
+    setSuccess('')
+
     try {
-      const { error } = await authClient.passkey.addPasskey();
-      if (error) {
-        setError(error.message || 'Passkey binding failed');
+      const { error: passkeyError } = await authClient.passkey.addPasskey()
+      if (passkeyError) {
+        setError(passkeyError.message || 'Passkey binding failed')
       } else {
-        setSuccess('Passkey bound successfully!');
-        fetchAuthMethods();
+        setSuccess('Passkey added successfully.')
+        void fetchAuthMethods()
       }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (err.name === 'NotSupportedError') {
-          setError('Your browser does not support Passkey');
-        } else if (err.name === 'NotAllowedError') {
-          setError('Passkey binding cancelled');
+    } catch (bindError: unknown) {
+      if (bindError instanceof Error) {
+        if (bindError.name === 'NotSupportedError') {
+          setError('Your browser does not support Passkey.')
+        } else if (bindError.name === 'NotAllowedError') {
+          setError('Passkey setup was cancelled.')
         } else {
-          setError(err.message || 'Passkey binding failed, please retry');
+          setError(bindError.message || 'Passkey binding failed. Please retry.')
         }
       } else {
-        setError('Passkey binding failed, please retry');
+        setError('Passkey binding failed. Please retry.')
       }
     }
-  };
+  }
 
   const handleBindGithub = async () => {
-    setError('');
-    setSuccess('');
+    setError('')
+    setSuccess('')
+
     try {
       await authClient.linkSocial({
         provider: 'github',
         callbackURL: '/settings',
-      });
-    } catch (err) {
-      setError('GitHub binding failed, please retry');
+      })
+    } catch {
+      setError('GitHub binding failed. Please retry.')
     }
-  };
+  }
 
   const handleUnbind = async (type: string) => {
-    if (!confirm(`Are you sure you want to unbind ${getMethodName(type)}?`))
-      return;
+    if (!confirm(`Unlink ${getMethodName(type)} from this account?`)) return
 
     try {
-      const res = await fetch(
-        `/api/users/${session?.user?.id}/auth-methods/${type}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      const data = await res.json();
+      const response = await fetch(`/api/users/${session?.user?.id}/auth-methods/${type}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
       if (data.error) {
-        setError(data.error);
+        setError(data.error)
       } else {
-        setSuccess(`${getMethodName(type)} unbound successfully`);
-        fetchAuthMethods();
+        setSuccess(`${getMethodName(type)} unlinked successfully.`)
+        void fetchAuthMethods()
       }
-    } catch (err) {
-      setError('Unbind failed');
+    } catch {
+      setError('Failed to unlink authentication method')
     }
-  };
+  }
+
+  const unboundMethods = ['passkey', 'github'].filter(
+    (type) => !methods.find((method) => method.type === type)
+  )
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <Terminal className="h-8 w-8 text-accent-primary animate-pulse" />
-        <div className="text-foreground-secondary text-sm font-mono">
-          Loading user settings...
-          <span className="terminal-cursor ml-1" />
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
+          <Shield className="h-5 w-5 animate-pulse" />
         </div>
+        <div className="text-sm text-foreground-muted">Loading workspace settings…</div>
       </div>
-    );
+    )
   }
 
-  // 已绑定和未绑定的方法
-  const boundMethods = methods;
-  const unboundMethods = ['passkey', 'github'].filter(
-    (type) => !methods.find((m) => m.type === type)
-  );
-
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
-      {/* 头部 */}
-      <div>
-        <h1 className="text-xl lg:text-2xl font-bold tracking-wider uppercase flex items-center gap-2">
-          <span className="text-foreground-muted">{'>'}</span>
-          USER SETTINGS
-        </h1>
-        <p className="text-xs lg:text-sm text-foreground-secondary mt-1">
-          <span className="hidden sm:inline">$ vi ~/.authrc | </span>Manage authentication methods
-        </p>
-      </div>
+    <div className="saas-page">
+      <PageHeader
+        eyebrow="Workspace preferences"
+        icon={Palette}
+        title="Settings"
+        description="Manage identity, authentication, appearance, and workspace-level information."
+      />
 
-      {/* 错误信息 */}
       {error && (
-        <div className="border border-accent-error bg-accent-error/10 p-3 text-sm text-accent-error flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
           <AlertTriangle className="h-4 w-4" />
-          <span>
-            <span className="text-foreground-muted">[</span>
-            ERROR
-            <span className="text-foreground-muted">]</span> {error}
-          </span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* 成功信息 */}
       {success && (
-        <div className="border border-accent-success bg-accent-success/10 p-3 text-sm text-accent-success flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-accent-success/30 bg-accent-success/10 p-4 text-sm text-accent-success">
           <Check className="h-4 w-4" />
-          <span>
-            <span className="text-foreground-muted">[</span>
-            OK
-            <span className="text-foreground-muted">]</span> {success}
-          </span>
+          <span>{success}</span>
         </div>
       )}
 
-      {/* 已绑定的认证方式 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="text-foreground-muted">+---</span>
-            <UserCog className="h-4 w-4" />
-            BOUND AUTHENTICATION METHODS
-            <span className="text-foreground-muted">---+</span>
-          </CardTitle>
-          <CardDescription className="text-xs font-mono mt-1">
-            You can use any of these methods to login
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {boundMethods.length === 0 ? (
-            <div className="p-8 text-center text-foreground-muted font-mono text-sm">
-              <p>No authentication methods found</p>
-              <p className="text-xs mt-1">$ echo "Please bind at least one method"</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {boundMethods.map((method, index) => (
-                <div
-                  key={method.type}
-                  className="flex items-center justify-between p-4 hover:bg-background-hover transition-colors"
+      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="h-fit rounded-2xl border border-border bg-background-tertiary/70 p-2 shadow-sm backdrop-blur-xl lg:sticky lg:top-4">
+          <nav className="space-y-1" aria-label="Settings sections">
+            {settingsNavigation.map((item) => {
+              const Icon = item.icon
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-foreground-muted hover:bg-background-hover hover:text-foreground-primary"
                 >
-                  <div className="flex items-center gap-4">
-                    {/* 序号 */}
-                    <span className="text-foreground-muted font-mono text-sm w-6">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-
-                    {/* 图标 */}
-                    <span className="text-accent-primary">
-                      {getMethodIcon(method.type)}
-                    </span>
-
-                    {/* 信息 */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-medium">
-                          {getMethodName(method.type)}
-                        </span>
-                        <span className="text-accent-success text-xs">
-                          [ENABLED]
-                        </span>
-                      </div>
-                      <p className="text-xs text-foreground-muted font-mono mt-0.5">
-                        {method.email
-                          ? `email: ${method.email}`
-                          : `bound: ${formatDate(method.createdAt)}`}
-                      </p>
-                    </div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background-secondary ring-1 ring-inset ring-border/80">
+                    <Icon className="h-3.5 w-3.5" />
                   </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{item.label}</div>
+                    <div className="truncate text-[11px] text-foreground-placeholder">{item.description}</div>
+                  </div>
+                </a>
+              )
+            })}
+          </nav>
+        </aside>
 
-                  {/* 解绑按钮 */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleUnbind(method.type)}
-                    disabled={boundMethods.length <= 1}
-                    className={
-                      boundMethods.length <= 1
-                        ? 'text-foreground-muted cursor-not-allowed'
-                        : 'hover:text-accent-error'
-                    }
-                    title={
-                      boundMethods.length <= 1
-                        ? 'Cannot unbind last method'
-                        : 'Unbind'
-                    }
-                  >
-                    {boundMethods.length <= 1 ? '[ LOCKED ]' : '[ UNBIND ]'}
-                  </Button>
+        <div className="min-w-0 space-y-4">
+          <Section
+            id="profile"
+            title="Profile"
+            description="Identity associated with this administrative workspace."
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary ring-1 ring-inset ring-accent-primary/20">
+                <span className="text-lg font-semibold">
+                  {(session?.user?.name || session?.user?.email || 'U').slice(0, 1).toUpperCase()}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-base font-semibold text-foreground-primary">
+                  {session?.user?.name || 'Workspace owner'}
                 </div>
-              ))}
+                <div className="mt-1 truncate text-sm text-foreground-muted">{session?.user?.email}</div>
+              </div>
+              <Badge variant="success">Administrator</Badge>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </Section>
 
-      {/* 绑定新的认证方式 */}
-      {unboundMethods.length > 0 && (
-        <Card>
-          <CardHeader className="border-b border-border">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <span className="text-foreground-muted">+---</span>
-              <Plus className="h-4 w-4" />
-              BIND NEW METHOD
-              <span className="text-foreground-muted">---+</span>
-            </CardTitle>
-            <CardDescription className="text-xs font-mono mt-1">
-              Add more login methods to improve account security
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 space-y-2">
-            {unboundMethods.includes('passkey') && (
-              <Button
-                variant="outline"
-                className="w-full justify-start font-mono"
-                onClick={handleBindPasskey}
-              >
-                <Key className="mr-2 h-4 w-4" />
-                $ bind --passkey
-              </Button>
-            )}
-            {unboundMethods.includes('github') && (
-              <Button
-                variant="outline"
-                className="w-full justify-start font-mono"
-                onClick={handleBindGithub}
-              >
-                <Github className="mr-2 h-4 w-4" />
-                $ bind --github
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 主题设置 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="text-foreground-muted">+---</span>
-            <Palette className="h-4 w-4" />
-            THEME SETTINGS
-            <span className="text-foreground-muted">---+</span>
-          </CardTitle>
-          <CardDescription className="text-xs font-mono mt-1">
-            Customize appearance and visual style
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 space-y-4">
-          {/* 明暗模式切换 */}
-          <div>
-            <div className="text-sm font-mono text-foreground-secondary mb-2">
-              <span className="text-foreground-muted">$</span> theme --mode
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={mode === 'light' ? 'primary' : 'outline'}
-                className="font-mono justify-start"
-                onClick={() => setMode('light')}
-              >
-                <Sun className="mr-2 h-4 w-4" />
-                LIGHT
-              </Button>
-              <Button
-                variant={mode === 'dark' ? 'primary' : 'outline'}
-                className="font-mono justify-start"
-                onClick={() => setMode('dark')}
-              >
-                <Moon className="mr-2 h-4 w-4" />
-                DARK
-              </Button>
-            </div>
-          </div>
-
-          {/* 风格切换 */}
-          <div>
-            <div className="text-sm font-mono text-foreground-secondary mb-2">
-              <span className="text-foreground-muted">$</span> theme --style
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={style === 'terminal' ? 'primary' : 'outline'}
-                className="font-mono justify-start"
-                onClick={() => setStyle('terminal')}
-              >
-                <Terminal className="mr-2 h-4 w-4" />
-                TERMINAL
-              </Button>
-              <Button
-                variant={style === 'modern' ? 'primary' : 'outline'}
-                className="font-mono justify-start"
-                onClick={() => setStyle('modern')}
-              >
-                <Monitor className="mr-2 h-4 w-4" />
-                MODERN
-              </Button>
-            </div>
-          </div>
-
-          {/* 当前配置 */}
-          <div className="border border-border p-3 font-mono text-xs bg-background-secondary">
-            <div className="text-foreground-muted mb-1">Current config:</div>
-            <div className="text-accent-primary">
-              mode={mode} style={style}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 用户信息 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="text-foreground-muted">+---</span>
-            <Terminal className="h-4 w-4" />
-            SESSION INFO
-            <span className="text-foreground-muted">---+</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 font-mono text-sm">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-foreground-muted">user:</span>
-              <span className="text-accent-info">
-                {session?.user?.name || 'N/A'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-foreground-muted">email:</span>
-              <span className="text-accent-primary">
-                {session?.user?.email || 'N/A'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-foreground-muted">id:</span>
-              <span className="text-foreground-secondary text-xs">
-                {session?.user?.id || 'N/A'}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 底部状态栏 */}
-      <div className="border border-border p-3 font-mono text-xs">
-        <div className="flex flex-wrap items-center gap-2 text-foreground-muted">
-          <span className="text-accent-success">●</span>
-          <span className="hidden sm:inline">SESSION STATUS: ACTIVE</span>
-          <span className="sm:hidden">ACTIVE</span>
-          <span className="hidden sm:inline mx-2">|</span>
-          <span>METHODS: {boundMethods.length}</span>
-          <span className="mx-2">|</span>
-          <span>
-            <span className="hidden sm:inline">SECURITY LEVEL: </span>
-            <span className="sm:hidden">LEVEL: </span>
-            {boundMethods.length >= 2 ? (
-              <span className="text-accent-success">HIGH</span>
+          <Section
+            id="security"
+            title="Security"
+            description="Use any linked authentication method to access your account."
+            actions={<Badge variant="success">{methods.length} linked</Badge>}
+            contentClassName="space-y-3"
+          >
+            {methods.length === 0 ? (
+              <EmptyState icon={Shield} title="No authentication methods found" description="At least one authentication method is required." />
             ) : (
-              <span className="text-accent-warning">MEDIUM</span>
+              methods.map((method) => {
+                const Icon = getMethodIcon(method.type)
+                const canUnbind = methods.length > 1
+                return (
+                  <div key={method.type} className="flex flex-col gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-foreground-primary">{getMethodName(method.type)}</span>
+                          <Badge variant="success">Enabled</Badge>
+                        </div>
+                        <div className="mt-1 truncate text-xs text-foreground-muted">
+                          {method.email || `Linked ${formatDate(method.createdAt)}`}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleUnbind(method.type)}
+                      disabled={!canUnbind}
+                      title={canUnbind ? `Unlink ${getMethodName(method.type)}` : 'The last authentication method cannot be removed'}
+                    >
+                      {canUnbind ? 'Unlink' : 'Required'}
+                    </Button>
+                  </div>
+                )
+              })
             )}
-          </span>
+
+            {unboundMethods.length > 0 && (
+              <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                {unboundMethods.includes('passkey') && (
+                  <button
+                    type="button"
+                    onClick={() => void handleBindPasskey()}
+                    className="flex items-center gap-3 rounded-xl border border-dashed border-border p-4 text-left hover:border-border-hover hover:bg-background-hover"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-secondary text-foreground-muted">
+                      <Key className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium"><Plus className="h-3.5 w-3.5" />Add Passkey</div>
+                      <div className="mt-1 text-xs text-foreground-muted">Biometric or hardware-key sign in</div>
+                    </div>
+                  </button>
+                )}
+                {unboundMethods.includes('github') && (
+                  <button
+                    type="button"
+                    onClick={() => void handleBindGithub()}
+                    className="flex items-center gap-3 rounded-xl border border-dashed border-border p-4 text-left hover:border-border-hover hover:bg-background-hover"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-secondary text-foreground-muted">
+                      <Github className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-medium"><Plus className="h-3.5 w-3.5" />Connect GitHub</div>
+                      <div className="mt-1 text-xs text-foreground-muted">Use a linked GitHub account</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+            )}
+          </Section>
+
+          <Section id="appearance" title="Appearance" description="Choose the interface mode and visual system.">
+            <div className="space-y-5">
+              <div>
+                <div className="mb-2 text-xs font-medium text-foreground-secondary">Color mode</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {([
+                    { value: 'light' as const, label: 'Light', description: 'Bright neutral surfaces', icon: Sun },
+                    { value: 'dark' as const, label: 'Dark', description: 'Premium low-light workspace', icon: Moon },
+                  ]).map((option) => {
+                    const Icon = option.icon
+                    const selected = mode === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setMode(option.value)}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl border p-4 text-left',
+                          selected ? 'border-accent-primary/45 bg-accent-primary/10 ring-1 ring-accent-primary/15' : 'border-border bg-background-secondary/60 hover:bg-background-hover'
+                        )}
+                      >
+                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{option.label}</div>
+                          <div className="mt-0.5 text-xs text-foreground-muted">{option.description}</div>
+                        </div>
+                        {selected && <Check className="h-4 w-4 text-accent-primary" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 text-xs font-medium text-foreground-secondary">Interface style</div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {([
+                    { value: 'modern' as const, label: 'SaaS', description: 'Clean cards and modern typography', icon: Laptop },
+                    { value: 'terminal' as const, label: 'Terminal', description: 'Legacy monospace interface style', icon: TerminalSquare },
+                  ]).map((option) => {
+                    const Icon = option.icon
+                    const selected = style === option.value
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setStyle(option.value)}
+                        className={cn(
+                          'flex items-center gap-3 rounded-xl border p-4 text-left',
+                          selected ? 'border-accent-primary/45 bg-accent-primary/10 ring-1 ring-accent-primary/15' : 'border-border bg-background-secondary/60 hover:bg-background-hover'
+                        )}
+                      >
+                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{option.label}</div>
+                          <div className="mt-0.5 text-xs text-foreground-muted">{option.description}</div>
+                        </div>
+                        {selected && <Check className="h-4 w-4 text-accent-primary" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </Section>
+
+          <Section id="notifications" title="Notifications" description="Notification delivery follows the existing system configuration.">
+            <div className="flex items-start gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-info/10 text-accent-info">
+                <Bell className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">System-managed notifications</div>
+                <div className="mt-1 text-xs leading-5 text-foreground-muted">There are no user-configurable notification preferences in the current application.</div>
+              </div>
+            </div>
+          </Section>
+
+          <Section id="data" title="Data" description="Data ownership and persistence remain unchanged by this redesign.">
+            <div className="flex items-start gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-success/10 text-accent-success">
+                <Database className="h-4 w-4" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">Existing storage configuration</div>
+                <div className="mt-1 text-xs leading-5 text-foreground-muted">No database schema, models, data structures, or retention behavior were changed.</div>
+              </div>
+            </div>
+          </Section>
         </div>
       </div>
     </div>
-  );
+  )
 }

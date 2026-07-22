@@ -1,193 +1,95 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  AlertTriangle,
+  Braces,
+  CheckCircle2,
+  Code2,
+  FileCode2,
+  FileText,
+  Pencil,
+  Plus,
+  Power,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
+import { authClient } from '@/lib/auth-client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  FileText,
-  RefreshCw,
-  Terminal,
-  Power,
-  AlertTriangle,
-  Code,
-} from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
-import { ResponsiveTable } from '@/components/ui/responsive-table';
-import { useMediaQuery } from '@/hooks/use-media-query';
-
-/**
- * Terminal CLI Configs Management Page
- *
- * 设计特点:
- * - ASCII 风格表格
- * - 代码编辑器风格 YAML 输入
- * - 终端风格状态指示
- */
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge, EmptyState, PageHeader, StatCard } from '@/components/ui/saas'
 
 interface Config {
-  id: string;
-  name: string;
-  content: string;
-  isActive: boolean;
-  createdAt: string;
+  id: string
+  name: string
+  content: string
+  isActive: boolean
+  createdAt: string
   user: {
-    email: string;
-  };
+    email: string
+  }
 }
 
 type PaginatedResponse<T> = {
-  [key: string]: T[] | { page: number; pageSize: number; total: number; pageCount: number } | undefined;
-  pagination?: { page: number; pageSize: number; total: number; pageCount: number };
-};
+  [key: string]: T[] | { page: number; pageSize: number; total: number; pageCount: number } | undefined
+  pagination?: { page: number; pageSize: number; total: number; pageCount: number }
+}
 
-async function fetchAllPages<T>(basePath: string, collectionKey: string, params: Record<string, string> = {}): Promise<T[]> {
-  const pageSize = 100;
-  let page = 1;
-  let pageCount = 1;
-  const items: T[] = [];
+async function fetchAllPages<T>(
+  basePath: string,
+  collectionKey: string,
+  params: Record<string, string> = {}
+): Promise<T[]> {
+  const pageSize = 100
+  let page = 1
+  let pageCount = 1
+  const items: T[] = []
 
   do {
-    const searchParams = new URLSearchParams({ ...params, page: String(page), pageSize: String(pageSize) });
-    const res = await fetch(`${basePath}?${searchParams.toString()}`);
-    if (!res.ok) throw new Error(`Failed to fetch ${collectionKey}`);
+    const searchParams = new URLSearchParams({ ...params, page: String(page), pageSize: String(pageSize) })
+    const response = await fetch(`${basePath}?${searchParams.toString()}`)
+    if (!response.ok) throw new Error(`Failed to fetch ${collectionKey}`)
 
-    const data = await res.json() as PaginatedResponse<T>;
-    items.push(...((data[collectionKey] as T[] | undefined) || []));
-    pageCount = data.pagination?.pageCount || 1;
-    page += 1;
-  } while (page <= pageCount);
+    const data = await response.json() as PaginatedResponse<T>
+    items.push(...((data[collectionKey] as T[] | undefined) || []))
+    pageCount = data.pagination?.pageCount || 1
+    page += 1
+  } while (page <= pageCount)
 
-  return items;
+  return items
 }
 
-// 计算配置内容统计
-function getContentStats(content: string): { lines: number; bytes: number } {
-  const lines = content.split('\n').length;
-  const bytes = new Blob([content]).size;
-  return { lines, bytes };
+function getContentStats(content: string) {
+  return {
+    lines: content.split('\n').length,
+    bytes: new Blob([content]).size,
+  }
 }
 
-// 格式化字节数
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default function ConfigsPage() {
-  const { data: session } = authClient.useSession();
-  const [configs, setConfigs] = useState<Config[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingConfig, setEditingConfig] = useState<Config | null>(null);
-  const [formData, setFormData] = useState({ name: '', content: '' });
-  const [error, setError] = useState('');
-  const { isMobile } = useMediaQuery();
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const fetchConfigs = async () => {
-    setRefreshing(true);
-    try {
-      const allConfigs = await fetchAllPages<Config>('/api/configs', 'configs', { includeContent: 'true' });
-      setConfigs(allConfigs);
-    } catch (err) {
-      setError('Failed to fetch configs');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      const res = await fetch('/api/configs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: session?.user?.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-        return;
-      }
-      setDialogOpen(false);
-      setFormData({ name: '', content: '' });
-      fetchConfigs();
-    } catch (err) {
-      setError('Failed to create config');
-    }
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingConfig) return;
-    setError('');
-    try {
-      const res = await fetch(`/api/configs/${editingConfig.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error);
-        return;
-      }
-      setDialogOpen(false);
-      setEditingConfig(null);
-      setFormData({ name: '', content: '' });
-      fetchConfigs();
-    } catch (err) {
-      setError('Failed to update config');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this config?')) return;
-    try {
-      await fetch(`/api/configs/${id}`, { method: 'DELETE' });
-      fetchConfigs();
-    } catch (err) {
-      setError('Failed to delete config');
-    }
-  };
-
-  const handleToggleActive = async (config: Config) => {
-    try {
-      await fetch(`/api/configs/${config.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !config.isActive }),
-      });
-      fetchConfigs();
-    } catch (err) {
-      setError('Failed to toggle config status');
-    }
-  };
-
-  const openCreateDialog = () => {
-    setEditingConfig(null);
-    setFormData({
-      name: '',
-      content: `# Clash Configuration Template
-# Generated by Subscription Terminal
+const starterTemplate = `# Clash Configuration Template
+# Generated by Subscription Manager
 
 port: 7890
 socks-port: 7891
@@ -203,331 +105,299 @@ proxy-groups:
 
 rules:
   - MATCH,DIRECT
-`,
-    });
-    setError('');
-    setDialogOpen(true);
-  };
+`
+
+export default function ConfigsPage() {
+  const { data: session } = authClient.useSession()
+  const [configs, setConfigs] = useState<Config[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingConfig, setEditingConfig] = useState<Config | null>(null)
+  const [formData, setFormData] = useState({ name: '', content: '' })
+  const [error, setError] = useState('')
+
+  const fetchConfigs = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      const allConfigs = await fetchAllPages<Config>('/api/configs', 'configs', { includeContent: 'true' })
+      setConfigs(allConfigs)
+    } catch {
+      setError('Failed to fetch configurations')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchConfigs()
+  }, [fetchConfigs])
+
+  const summary = useMemo(() => {
+    return configs.reduce(
+      (result, config) => {
+        const stats = getContentStats(config.content)
+        result.lines += stats.lines
+        result.bytes += stats.bytes
+        if (config.isActive) result.active += 1
+        return result
+      },
+      { active: 0, lines: 0, bytes: 0 }
+    )
+  }, [configs])
+
+  const handleCreate = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+
+    try {
+      const response = await fetch('/api/configs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, userId: session?.user?.id }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error)
+        return
+      }
+
+      setDialogOpen(false)
+      setFormData({ name: '', content: '' })
+      void fetchConfigs()
+    } catch {
+      setError('Failed to create configuration')
+    }
+  }
+
+  const handleUpdate = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!editingConfig) return
+    setError('')
+
+    try {
+      const response = await fetch(`/api/configs/${editingConfig.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data.error)
+        return
+      }
+
+      setDialogOpen(false)
+      setEditingConfig(null)
+      setFormData({ name: '', content: '' })
+      void fetchConfigs()
+    } catch {
+      setError('Failed to update configuration')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this configuration?')) return
+
+    try {
+      await fetch(`/api/configs/${id}`, { method: 'DELETE' })
+      void fetchConfigs()
+    } catch {
+      setError('Failed to delete configuration')
+    }
+  }
+
+  const handleToggleActive = async (config: Config) => {
+    try {
+      await fetch(`/api/configs/${config.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !config.isActive }),
+      })
+      void fetchConfigs()
+    } catch {
+      setError('Failed to update configuration status')
+    }
+  }
+
+  const openCreateDialog = () => {
+    setEditingConfig(null)
+    setFormData({ name: '', content: starterTemplate })
+    setError('')
+    setDialogOpen(true)
+  }
 
   const openEditDialog = (config: Config) => {
-    setEditingConfig(config);
-    setFormData({ name: config.name, content: config.content });
-    setError('');
-    setDialogOpen(true);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  // 移动端配置卡片渲染
-  const renderConfigCard = (config: Config, index: number) => {
-    const stats = getContentStats(config.content);
-    return (
-      <div className="border border-border bg-background-secondary p-4 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-foreground-muted text-xs font-mono">
-                #{String(index + 1).padStart(2, '0')}
-              </span>
-              <span className={config.isActive ? 'text-accent-success text-xs font-mono' : 'text-foreground-muted text-xs font-mono'}>
-                [{config.isActive ? 'ENABLED' : 'DISABLED'}]
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Code className="h-4 w-4 text-accent-info" />
-              <span className="text-accent-primary font-mono text-sm">
-                {config.name}
-              </span>
-              <span className="text-foreground-muted text-sm">.yaml</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(config)}>
-              <Power className={`h-4 w-4 ${config.isActive ? 'text-accent-success' : 'text-foreground-muted'}`} />
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(config)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(config.id)} className="hover:text-accent-error">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-          <div>
-            <span className="text-foreground-muted">OWNER: </span>
-            <span className="text-foreground-secondary">{config.user.email}</span>
-          </div>
-          <div>
-            <span className="text-foreground-muted">SIZE: </span>
-            <span className="text-foreground-secondary">{formatBytes(stats.bytes)} ({stats.lines}L)</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-foreground-muted">MODIFIED: </span>
-            <span className="text-foreground-secondary">{formatDate(config.createdAt)}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 桌面端表格渲染
-  const renderDesktopTable = () => (
-    <div className="overflow-x-auto">
-      <table className="w-full font-mono text-sm">
-        <thead>
-          <tr className="border-b border-border bg-background-secondary">
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">#</th>
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">Filename</th>
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">Owner</th>
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">Size</th>
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">Status</th>
-            <th className="text-left p-3 text-foreground-secondary text-xs uppercase tracking-wider">Modified</th>
-            <th className="text-right p-3 text-foreground-secondary text-xs uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {configs.map((config, index) => {
-            const stats = getContentStats(config.content);
-            return (
-              <tr key={config.id} className="hover:bg-background-hover transition-colors">
-                <td className="p-3 text-foreground-muted">{String(index + 1).padStart(2, '0')}</td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <Code className="h-4 w-4 text-accent-info" />
-                    <span className="text-accent-primary">{config.name}</span>
-                    <span className="text-foreground-muted">.yaml</span>
-                  </div>
-                </td>
-                <td className="p-3 text-foreground-secondary">{config.user.email}</td>
-                <td className="p-3 text-foreground-muted">
-                  <span title={`${stats.lines} lines`}>{formatBytes(stats.bytes)}</span>
-                  <span className="text-foreground-placeholder ml-2">({stats.lines}L)</span>
-                </td>
-                <td className="p-3">
-                  <span className={config.isActive ? 'text-accent-success' : 'text-foreground-muted'}>
-                    [{config.isActive ? 'ENABLED' : 'DISABLED'}]
-                  </span>
-                </td>
-                <td className="p-3 text-foreground-muted text-xs">{formatDate(config.createdAt)}</td>
-                <td className="p-3 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(config)}>
-                      <Power className={`h-4 w-4 ${config.isActive ? 'text-accent-success' : 'text-foreground-muted'}`} />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(config)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(config.id)} className="hover:text-accent-error">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+    setEditingConfig(config)
+    setFormData({ name: config.name, content: config.content })
+    setError('')
+    setDialogOpen(true)
+  }
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <Terminal className="h-8 w-8 text-accent-primary animate-pulse" />
-        <div className="text-foreground-secondary text-sm font-mono">
-          Loading configuration files...
-          <span className="terminal-cursor ml-1" />
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
+          <Braces className="h-5 w-5 animate-pulse" />
         </div>
+        <div className="text-sm text-foreground-muted">Loading configuration library…</div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6 p-4 lg:p-6">
-      {/* 头部 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl lg:text-2xl font-bold tracking-wider uppercase flex items-center gap-2">
-            <span className="text-foreground-muted">{'>'}</span>
-            CONFIG MANAGEMENT
-          </h1>
-          <p className="text-xs lg:text-sm text-foreground-secondary mt-1">
-            <span className="hidden sm:inline">$ ls /etc/clash/*.yaml | </span>Total: {configs.length} configs
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={fetchConfigs}
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''} sm:mr-2`}
-            />
-            <span className="hidden sm:inline">REFRESH</span>
-          </Button>
-          <Button onClick={openCreateDialog} size="sm">
-            <Plus className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">NEW CONFIG</span>
-          </Button>
-        </div>
-      </div>
+    <div className="saas-page">
+      <PageHeader
+        eyebrow="Delivery infrastructure"
+        icon={Braces}
+        title="Configurations"
+        description="Maintain the existing YAML assets assigned to subscription accounts."
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => void fetchConfigs()} disabled={refreshing}>
+              <RefreshCw className={refreshing ? 'animate-spin' : ''} />
+              Refresh
+            </Button>
+            <Button size="sm" onClick={openCreateDialog}>
+              <Plus />
+              New configuration
+            </Button>
+          </>
+        }
+      />
 
-      {/* 配置表格 */}
-      <Card>
-        <CardHeader className="border-b border-border">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <span className="text-foreground-muted">+---</span>
-            <FileText className="h-4 w-4" />
-            CONFIGURATION FILES
-            <span className="text-foreground-muted">---+</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {configs.length === 0 ? (
-            <div className="p-8 text-center text-foreground-muted font-mono text-sm">
-              <p>No configuration files found</p>
-              <p className="text-xs mt-1">$ touch /etc/clash/config.yaml</p>
-            </div>
-          ) : (
-            <ResponsiveTable
-              data={configs}
-              keyField="id"
-              columns={[]}
-              renderCard={renderConfigCard}
-              renderTable={renderDesktopTable}
-            />
-          )}
-        </CardContent>
-      </Card>
+      {error && !dialogOpen && (
+        <div className="flex items-center gap-2 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
+          <AlertTriangle className="h-4 w-4" />
+          <span>{error}</span>
+        </div>
+      )}
 
-      {/* 配置编辑对话框 */}
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <StatCard label="Configuration assets" value={configs.length.toLocaleString()} description="Total YAML documents" icon={FileText} />
+        <StatCard label="Active" value={summary.active.toLocaleString()} description="Available for delivery" icon={CheckCircle2} tone="success" />
+        <StatCard label="Source lines" value={summary.lines.toLocaleString()} description="Across existing assets" icon={Code2} tone="info" />
+        <StatCard label="Storage" value={formatBytes(summary.bytes)} description="Current YAML payload size" icon={FileCode2} tone="primary" />
+      </section>
+
+      {configs.length === 0 ? (
+        <EmptyState
+          icon={FileCode2}
+          title="No configurations yet"
+          description="Create a YAML configuration to make it available for subscription assignment."
+          action={<Button size="sm" onClick={openCreateDialog}><Plus />New configuration</Button>}
+        />
+      ) : (
+        <section className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+          {configs.map((config) => {
+            const stats = getContentStats(config.content)
+            return (
+              <Card key={config.id} className="group overflow-hidden hover:-translate-y-0.5 hover:border-border-hover">
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary ring-1 ring-inset ring-accent-primary/15">
+                        <FileCode2 className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-foreground-primary">{config.name}</div>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <Badge variant={config.isActive ? 'success' : 'neutral'}>{config.isActive ? 'Active' : 'Disabled'}</Badge>
+                          <Badge variant="neutral">YAML</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <Button variant="ghost" size="icon-sm" onClick={() => void handleToggleActive(config)} title={config.isActive ? 'Disable configuration' : 'Enable configuration'}>
+                        <Power className={config.isActive ? 'text-accent-success' : undefined} />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(config)} title="Edit configuration">
+                        <Pencil />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => void handleDelete(config.id)} title="Delete configuration" className="hover:text-accent-error">
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
+                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Lines</div>
+                      <div className="mt-1 text-sm font-semibold">{stats.lines.toLocaleString()}</div>
+                    </div>
+                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
+                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Size</div>
+                      <div className="mt-1 text-sm font-semibold">{formatBytes(stats.bytes)}</div>
+                    </div>
+                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
+                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Created</div>
+                      <div className="mt-1 truncate text-sm font-semibold">{formatDate(config.createdAt)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 overflow-hidden rounded-xl bg-[#0d0d10] ring-1 ring-inset ring-border/70">
+                    <div className="flex items-center justify-between border-b border-border/70 px-3 py-2 text-[10px] text-foreground-muted">
+                      <span>Preview</span>
+                      <span>{config.user.email}</span>
+                    </div>
+                    <pre className="max-h-28 overflow-hidden whitespace-pre-wrap break-all p-3 font-mono text-[10px] leading-5 text-foreground-muted">
+                      {config.content.slice(0, 360)}
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </section>
+      )}
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl p-0">
           <DialogHeader>
-            <DialogTitle>
-              {editingConfig ? 'EDIT CONFIG' : 'CREATE CONFIG'}
-            </DialogTitle>
+            <DialogTitle>{editingConfig ? 'Edit configuration' : 'Create configuration'}</DialogTitle>
           </DialogHeader>
-          <form
-            onSubmit={editingConfig ? handleUpdate : handleCreate}
-            className="space-y-4 flex-1 flex flex-col overflow-hidden"
-          >
-            {/* 错误信息 */}
+          <form onSubmit={editingConfig ? handleUpdate : handleCreate} className="space-y-5 p-5">
             {error && (
-              <div className="border border-accent-error bg-accent-error/10 p-3 text-sm text-accent-error flex items-center gap-2">
+              <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/10 p-3 text-sm text-accent-error">
                 <AlertTriangle className="h-4 w-4" />
-                <span>
-                  <span className="text-foreground-muted">[</span>
-                  ERROR
-                  <span className="text-foreground-muted">]</span> {error}
-                </span>
+                <span>{error}</span>
               </div>
             )}
 
-            {/* 配置名称 */}
             <div className="space-y-2">
-              <Label
-                htmlFor="name"
-                className="text-foreground-secondary text-xs uppercase tracking-wider"
-              >
-                $ FILENAME
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="my-config"
-                  className="flex-1"
-                  required
-                />
-                <span className="text-foreground-muted font-mono">.yaml</span>
-              </div>
+              <Label htmlFor="name" className="text-xs text-foreground-secondary">Configuration name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                placeholder="Production subscription"
+                required
+              />
             </div>
 
-            {/* YAML 编辑区域 */}
-            <div className="space-y-2 flex-1 flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="content"
-                  className="text-foreground-secondary text-xs uppercase tracking-wider"
-                >
-                  $ YAML CONTENT
-                </Label>
-                <span className="text-xs text-foreground-muted font-mono">
-                  {getContentStats(formData.content).lines} lines |{' '}
-                  {formatBytes(getContentStats(formData.content).bytes)}
-                </span>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="content" className="text-xs text-foreground-secondary">YAML content</Label>
+                <Badge variant="neutral">{getContentStats(formData.content).lines} lines · {formatBytes(getContentStats(formData.content).bytes)}</Badge>
               </div>
-              <div className="flex-1 overflow-hidden border border-border bg-background-secondary">
-                {/* 终端风格标题栏 */}
-                <div className="flex items-center justify-between px-3 py-2 bg-background-primary border-b border-border">
-                  <div className="flex items-center gap-2 text-xs text-foreground-muted">
-                    <Code className="h-3 w-3" />
-                    <span>vim {formData.name || 'untitled'}.yaml</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-foreground-placeholder">
-                    <span>INSERT</span>
-                  </div>
-                </div>
-                {/* 编辑区域 */}
-                <textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
-                  }
-                  className="w-full h-[350px] bg-background-secondary px-3 py-2 text-sm text-foreground-primary font-mono transition-colors focus-visible:outline-none resize-none"
-                  placeholder="# Enter your YAML configuration here..."
-                  spellCheck={false}
-                  required
-                />
-              </div>
+              <textarea
+                id="content"
+                value={formData.content}
+                onChange={(event) => setFormData({ ...formData, content: event.target.value })}
+                className="min-h-[24rem] w-full resize-y rounded-xl border border-border bg-[#0d0d10] p-4 font-mono text-xs leading-6 text-foreground-secondary shadow-inner placeholder:text-foreground-placeholder focus:border-border-strong focus:outline-none focus:ring-4 focus:ring-ring"
+                required
+                spellCheck={false}
+              />
             </div>
 
-            {/* 按钮 */}
-            <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-              >
-                [ CANCEL ]
-              </Button>
-              <Button type="submit">
-                {editingConfig ? '[ SAVE :w ]' : '[ CREATE ]'}
-              </Button>
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">{editingConfig ? 'Save changes' : 'Create configuration'}</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* 底部状态栏 */}
-      <div className="border border-border p-3 font-mono text-xs">
-        <div className="flex flex-wrap items-center gap-2 text-foreground-muted">
-          <span className="text-accent-success">●</span>
-          <span className="hidden sm:inline">FILE SYSTEM: READY</span>
-          <span className="sm:hidden">READY</span>
-          <span className="hidden sm:inline mx-2">|</span>
-          <span>TOTAL: {configs.length}</span>
-          <span className="mx-2">|</span>
-          <span>ENABLED: {configs.filter((c) => c.isActive).length}</span>
-          <span className="mx-2">|</span>
-          <span>DISABLED: {configs.filter((c) => !c.isActive).length}</span>
-        </div>
-      </div>
     </div>
-  );
+  )
 }
