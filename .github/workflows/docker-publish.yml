@@ -6,6 +6,12 @@ on:
       - main
     tags:
       - 'v*'
+  pull_request:
+    paths:
+      - Dockerfile
+      - package.json
+      - pnpm-lock.yaml
+      - .github/workflows/docker-publish.yml
   workflow_dispatch:
 
 permissions:
@@ -19,23 +25,8 @@ jobs:
   scan:
     name: Scan amd64 image
     runs-on: ubuntu-24.04
-    environment: docker
 
     steps:
-      - name: Check Docker Hub configuration
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-        run: |
-          if [ -z "$DOCKERHUB_USERNAME" ]; then
-            echo "::error::Environment secret DOCKERHUB_USERNAME is not configured."
-            exit 1
-          fi
-          if [ -z "$DOCKERHUB_TOKEN" ]; then
-            echo "::error::Environment secret DOCKERHUB_TOKEN is not configured."
-            exit 1
-          fi
-
       - name: Check out repository
         uses: actions/checkout@v6
 
@@ -46,7 +37,7 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager
+          images: next-subscription-manager
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-
@@ -65,16 +56,56 @@ jobs:
           cache-from: type=gha,scope=scan-linux-amd64
           cache-to: type=gha,mode=max,scope=scan-linux-amd64
 
-      - name: Scan image
+      - name: Generate Trivy report
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: next-subscription-manager:scan
-          format: table
-          exit-code: '1'
+          format: json
+          output: trivy-results.json
+          exit-code: '0'
+          scanners: vuln
           severity: CRITICAL,HIGH
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-report-amd64
+          path: trivy-results.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enforce vulnerability gate
+        shell: bash
+        run: |
+          count="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH")] | length' trivy-results.json)"
+
+          if [ "$count" -eq 0 ]; then
+            echo "No HIGH or CRITICAL vulnerabilities found."
+            exit 0
+          fi
+
+          echo "HIGH/CRITICAL vulnerabilities detected: $count"
+          printf '%s\n' $'SEVERITY\tPACKAGE\tINSTALLED\tFIXED\tVULNERABILITY'
+          jq -r '
+            [.Results[]?.Vulnerabilities[]?
+              | select(.Severity == "CRITICAL" or .Severity == "HIGH")]
+            | sort_by(.Severity, .PkgName, .VulnerabilityID)[]
+            | [
+                .Severity,
+                .PkgName,
+                .InstalledVersion,
+                (.FixedVersion // "unfixed"),
+                .VulnerabilityID
+              ]
+            | @tsv
+          ' trivy-results.json
+          echo "::error::Container image contains $count HIGH or CRITICAL vulnerabilities."
+          exit 1
 
   build:
     name: Build ${{ matrix.platform }}
+    if: github.event_name != 'pull_request'
     needs: scan
     runs-on: ${{ matrix.runner }}
     environment: docker
@@ -139,6 +170,7 @@ jobs:
 
   merge:
     name: Publish multi-platform image
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
     environment: docker
