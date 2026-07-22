@@ -1,17 +1,17 @@
-'use client';
+'use client'
 
-import { useMemo, useState } from 'react';
-import { AlertTriangle, Sparkles } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useMemo, useState } from 'react'
+import { AlertTriangle, ChartNoAxesCombined } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   AccessLogsPanel,
   MonitorFiltersPanel,
   MonitorHeader,
   SecurityEventsPanel,
   StatsGrid,
-} from '@/components/monitor/monitor-panels';
-import { useMonitorData } from '@/hooks/use-monitor-data';
-import type { MonitorFilters } from '@/types/monitor';
+} from '@/components/monitor/monitor-panels'
+import { useMonitorData } from '@/hooks/use-monitor-data'
+import type { MonitorFilters } from '@/types/monitor'
 
 const defaultFilters: MonitorFilters = {
   accessQuery: '',
@@ -23,12 +23,12 @@ const defaultFilters: MonitorFilters = {
   from: '',
   to: '',
   limit: 50,
-};
+}
 
 export default function MonitorPage() {
-  const [filters, setFilters] = useState<MonitorFilters>(defaultFilters);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const [filters, setFilters] = useState<MonitorFilters>(defaultFilters)
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [refreshInterval, setRefreshInterval] = useState(30)
 
   const normalizedFilters = useMemo(
     () => ({
@@ -40,7 +40,7 @@ export default function MonitorPage() {
       securityIp: filters.securityIp.trim(),
     }),
     [filters]
-  );
+  )
 
   const {
     stats,
@@ -51,19 +51,21 @@ export default function MonitorPage() {
     error,
     lastUpdated,
     refresh,
-  } = useMonitorData(normalizedFilters, autoRefresh, refreshInterval);
+  } = useMonitorData(normalizedFilters, autoRefresh, refreshInterval)
 
   if (loading) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center gap-4">
-        <Sparkles className="h-8 w-8 animate-pulse text-accent-primary" />
-        <div className="text-sm text-foreground-secondary">Preparing monitoring glass...</div>
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
+          <ChartNoAxesCombined className="h-5 w-5 animate-pulse" />
+        </div>
+        <div className="text-sm text-foreground-muted">Loading analytics workspace…</div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="saas-page">
       <MonitorHeader
         refreshing={refreshing}
         autoRefresh={autoRefresh}
@@ -75,7 +77,7 @@ export default function MonitorPage() {
       />
 
       {error && (
-        <div className="flex flex-col gap-3 rounded-3xl border border-accent-error/30 bg-accent-error/10 p-4 text-accent-error backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-accent-error sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4" />
             <span>{error}</span>
@@ -94,5 +96,5 @@ export default function MonitorPage() {
         <AccessLogsPanel logs={logs} />
       </div>
     </div>
-  );
+  )
 }

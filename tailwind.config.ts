@@ -73,6 +73,15 @@ const config: Config = {
       // 间距系统 - 8px基准网格
       spacing,
 
+      // UI V2 使用的精细透明度档位，确保 slash opacity 类进入生产 CSS
+      opacity: {
+        8: '0.08',
+        15: '0.15',
+        35: '0.35',
+        45: '0.45',
+        65: '0.65',
+      },
+
       // 字体系统 - 使用CSS变量支持主题切换
       fontFamily: {
         sans: ['var(--font-sans)'],
