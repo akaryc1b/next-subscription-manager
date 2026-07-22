@@ -27,7 +27,6 @@ import {
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +36,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge, EmptyState, PageHeader, StatCard } from '@/components/ui/saas'
+import { Badge, EmptyState, PageHeader, Section, StatCard } from '@/components/ui/saas'
 import { cn } from '@/lib/utils'
 
 interface User {
@@ -132,7 +131,7 @@ export default function UsersPage() {
   const [copyRocketSuccess, setCopyRocketSuccess] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [searching, setSearching] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const debounceTimer = useRef<NodeJS.Timeout | null>(null)
   const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false)
   const [subscriptionUser, setSubscriptionUser] = useState<User | null>(null)
@@ -380,12 +379,13 @@ export default function UsersPage() {
     if (!user.subscription?.token) return null
 
     return (
-      <div className={cn('grid gap-2', compact ? 'grid-cols-3' : 'grid-cols-[1fr_1fr_auto]')}>
+      <div className={cn('grid gap-1.5', compact ? 'grid-cols-3' : 'grid-cols-[1fr_1fr_auto]')}>
         <Button
           variant="outline"
           size="sm"
           onClick={() => copySubscriptionLink(user.subscription!.token, user.id)}
           className="min-w-0"
+          title="Copy subscription link"
         >
           {copySuccess === user.id ? <Check className="text-accent-success" /> : <Copy />}
           {!compact && <span>{copySuccess === user.id ? 'Copied' : 'Copy link'}</span>}
@@ -395,6 +395,7 @@ export default function UsersPage() {
           size="sm"
           onClick={() => copyShadowrocketLink(user.subscription!.token, user.id)}
           className="min-w-0"
+          title="Copy Shadowrocket link"
         >
           {copyRocketSuccess === user.id ? <Check className="text-accent-success" /> : <Rocket />}
           {!compact && <span>{copyRocketSuccess === user.id ? 'Copied' : 'Shadowrocket'}</span>}
@@ -415,8 +416,8 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-          <CreditCard className="h-5 w-5 animate-pulse" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-secondary text-accent-primary">
+          <CreditCard className="h-4 w-4 animate-pulse" />
         </div>
         <div className="text-sm text-foreground-muted">Loading subscription portfolio…</div>
       </div>
@@ -429,7 +430,7 @@ export default function UsersPage() {
         eyebrow="Subscription portfolio"
         icon={CreditCard}
         title="Subscriptions"
-        description="Manage subscription accounts, delivery links, access limits, assigned configurations, and account status."
+        description="Manage account status, delivery links, access limits, renewals, and assigned configurations."
         actions={
           <>
             <Button
@@ -450,20 +451,20 @@ export default function UsersPage() {
       />
 
       {error && !dialogOpen && !subscriptionDialogOpen && (
-        <div className="flex items-center gap-2 rounded-2xl border border-accent-error/30 bg-accent-error/8 p-4 text-sm text-accent-error">
+        <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
           <AlertTriangle className="h-4 w-4" />
           <span>{error}</span>
         </div>
       )}
 
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="metric-strip" aria-label="Subscription summary">
         <StatCard label="Total subscriptions" value={users.length.toLocaleString()} description="Managed subscription accounts" icon={CreditCard} />
         <StatCard label="Active" value={summary.active.toLocaleString()} description="Available for subscription delivery" icon={ShieldCheck} tone="success" />
         <StatCard label="Accesses used" value={summary.accesses.toLocaleString()} description="Cumulative recorded usage" icon={Power} tone="info" />
         <StatCard label="Needs attention" value={(summary.paused + summary.blocked).toLocaleString()} description={`${summary.paused} paused · ${summary.blocked} blocked`} icon={AlertTriangle} tone={summary.paused + summary.blocked > 0 ? 'warning' : 'success'} />
       </section>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background-tertiary/70 p-3 shadow-sm backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-background-secondary p-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative min-w-0 flex-1 sm:max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
           <Input
@@ -485,16 +486,7 @@ export default function UsersPage() {
           {searching && <RefreshCw className="absolute right-9 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-accent-primary" />}
         </div>
 
-        <div className="flex items-center gap-1 rounded-xl bg-background-secondary p-1 ring-1 ring-inset ring-border/80">
-          <Button
-            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-            aria-pressed={viewMode === 'grid'}
-          >
-            <Grid2X2 />
-            Grid
-          </Button>
+        <div className="flex items-center gap-1 rounded-lg bg-background-tertiary p-1">
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="sm"
@@ -504,21 +496,99 @@ export default function UsersPage() {
             <List />
             List
           </Button>
+          <Button
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            aria-pressed={viewMode === 'grid'}
+          >
+            <Grid2X2 />
+            Grid
+          </Button>
         </div>
       </div>
 
       {users.length === 0 ? (
-        <EmptyState
-          icon={CreditCard}
-          title={searchTerm ? 'No subscriptions match your search' : 'No subscriptions yet'}
-          description={searchTerm ? `No account matches “${searchTerm}”.` : 'Create the first subscription account to get started.'}
-          action={searchTerm ? (
-            <Button variant="secondary" size="sm" onClick={() => setSearchTerm('')}>Clear search</Button>
-          ) : (
-            <Button size="sm" onClick={openCreateDialog}><Plus />New subscription</Button>
-          )}
-        />
-      ) : viewMode === 'grid' ? (
+        <Section contentClassName="p-0">
+          <EmptyState
+            icon={CreditCard}
+            title={searchTerm ? 'No subscriptions match your search' : 'No subscriptions yet'}
+            description={searchTerm ? `No account matches “${searchTerm}”.` : 'Create the first subscription account to get started.'}
+            action={searchTerm ? (
+              <Button variant="secondary" size="sm" onClick={() => setSearchTerm('')}>Clear search</Button>
+            ) : (
+              <Button size="sm" onClick={openCreateDialog}><Plus />New subscription</Button>
+            )}
+          />
+        </Section>
+      ) : viewMode === 'list' ? (
+        <Section
+          title="Subscription accounts"
+          description={`${users.length.toLocaleString()} accounts in the current result set`}
+          contentClassName="p-0"
+        >
+          {users.map((user) => {
+            const status = getUserStatus(user)
+            const maxAccess = user.subscription?.maxAccess ?? 0
+            const accessCount = user.subscription?.accessCount ?? 0
+
+            return (
+              <article key={user.id} className="border-b border-border-subtle last:border-b-0">
+                <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 xl:flex-row xl:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background-tertiary text-accent-primary">
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium text-foreground-primary">{user.email}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <Badge variant="neutral">{user.role}</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 text-[11px] xl:w-[24rem]">
+                    <div>
+                      <div className="section-label">Usage</div>
+                      <div className="mt-1 tabular-nums font-medium text-foreground-secondary">{accessCount}/{maxAccess === 0 ? '∞' : maxAccess}</div>
+                    </div>
+                    <div>
+                      <div className="section-label">Configs</div>
+                      <div className="mt-1 tabular-nums font-medium text-foreground-secondary">{user.userConfigs?.length || 0}</div>
+                    </div>
+                    <div>
+                      <div className="section-label">Expires</div>
+                      <div className="mt-1 truncate tabular-nums font-medium text-foreground-secondary">{user.expiresAt ? formatDate(user.expiresAt) : 'Never'}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center xl:w-[23rem] xl:justify-end">
+                    <div className="min-w-0 flex-1">
+                      {user.subscription?.token ? renderSubscriptionActions(user, true) : (
+                        <div className="flex h-8 items-center justify-center rounded-lg border border-dashed border-border px-3 text-[10px] text-foreground-muted">
+                          Link unavailable
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)} title={user.isActive ? 'Pause account' : 'Activate account'}>
+                        <Power className={user.isActive ? 'text-accent-success' : undefined} />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)} title="Edit account">
+                        <Pencil />
+                      </Button>
+                      <Button variant="ghost" size="icon-sm" onClick={() => void handleDelete(user.id)} title="Delete account" className="hover:text-accent-error">
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
+        </Section>
+      ) : (
         <section className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {users.map((user) => {
             const status = getUserStatus(user)
@@ -527,15 +597,15 @@ export default function UsersPage() {
             const accessCount = user.subscription?.accessCount ?? 0
 
             return (
-              <Card key={user.id} className="group overflow-hidden hover:-translate-y-0.5 hover:border-border-hover">
-                <CardContent className="p-4 sm:p-5">
+              <article key={user.id} className="overflow-hidden rounded-xl border border-border bg-background-secondary">
+                <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary ring-1 ring-inset ring-accent-primary/15">
-                        <span className="text-sm font-semibold">{user.email.slice(0, 1).toUpperCase()}</span>
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary">
+                        <span className="text-xs font-semibold">{user.email.slice(0, 1).toUpperCase()}</span>
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-foreground-primary">{user.email}</div>
+                        <div className="truncate text-[13px] font-medium text-foreground-primary">{user.email}</div>
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           <Badge variant={status.variant}>{status.label}</Badge>
                           <Badge variant="neutral">{user.role}</Badge>
@@ -555,70 +625,30 @@ export default function UsersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Usage</div>
-                      <div className="mt-1 text-sm font-semibold">{accessCount}/{maxAccess === 0 ? '∞' : maxAccess}</div>
+                  <div className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-border bg-border">
+                    <div className="bg-background-tertiary p-3">
+                      <div className="section-label">Usage</div>
+                      <div className="mt-1 tabular-nums text-sm font-medium">{accessCount}/{maxAccess === 0 ? '∞' : maxAccess}</div>
                     </div>
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Configs</div>
-                      <div className="mt-1 text-sm font-semibold">{assignedConfigs}</div>
+                    <div className="bg-background-tertiary p-3">
+                      <div className="section-label">Configs</div>
+                      <div className="mt-1 tabular-nums text-sm font-medium">{assignedConfigs}</div>
                     </div>
-                    <div className="rounded-xl bg-background-secondary/70 p-3 ring-1 ring-inset ring-border/70">
-                      <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Renewal</div>
-                      <div className="mt-1 truncate text-sm font-semibold">{user.expiresAt ? formatDate(user.expiresAt) : 'No expiry'}</div>
+                    <div className="bg-background-tertiary p-3">
+                      <div className="section-label">Renewal</div>
+                      <div className="mt-1 truncate tabular-nums text-xs font-medium">{user.expiresAt ? formatDate(user.expiresAt) : 'No expiry'}</div>
                     </div>
                   </div>
 
                   {user.subscription?.token ? (
                     <div className="mt-4">{renderSubscriptionActions(user)}</div>
                   ) : (
-                    <div className="mt-4 rounded-xl border border-dashed border-border p-3 text-center text-xs text-foreground-muted">
+                    <div className="mt-4 rounded-lg border border-dashed border-border p-3 text-center text-xs text-foreground-muted">
                       Subscription link unavailable
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </section>
-      ) : (
-        <section className="space-y-2">
-          {users.map((user) => {
-            const status = getUserStatus(user)
-            const maxAccess = user.subscription?.maxAccess ?? 0
-            const accessCount = user.subscription?.accessCount ?? 0
-
-            return (
-              <Card key={user.id} className="overflow-hidden hover:border-border-hover">
-                <CardContent className="flex flex-col gap-4 p-4 xl:flex-row xl:items-center">
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
-                      <UserRound className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{user.email}</div>
-                      <div className="mt-1 flex flex-wrap gap-1.5">
-                        <Badge variant={status.variant}>{status.label}</Badge>
-                        <Badge variant="neutral">{user.role}</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs xl:w-[25rem]">
-                    <div><div className="text-foreground-muted">Usage</div><div className="mt-1 font-medium">{accessCount}/{maxAccess === 0 ? '∞' : maxAccess}</div></div>
-                    <div><div className="text-foreground-muted">Configs</div><div className="mt-1 font-medium">{user.userConfigs?.length || 0}</div></div>
-                    <div><div className="text-foreground-muted">Expires</div><div className="mt-1 truncate font-medium">{user.expiresAt ? formatDate(user.expiresAt) : 'Never'}</div></div>
-                  </div>
-                  <div className="grid grid-cols-[1fr_auto] gap-2 xl:w-[22rem]">
-                    {user.subscription?.token ? renderSubscriptionActions(user, true) : <div />}
-                    <div className="flex items-center gap-0.5">
-                      <Button variant="ghost" size="icon-sm" onClick={() => handleToggleActive(user)}><Power className={user.isActive ? 'text-accent-success' : undefined} /></Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => openEditDialog(user)}><Pencil /></Button>
-                      <Button variant="ghost" size="icon-sm" onClick={() => void handleDelete(user.id)} className="hover:text-accent-error"><Trash2 /></Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </article>
             )
           })}
         </section>
@@ -631,7 +661,7 @@ export default function UsersPage() {
           </DialogHeader>
           <form onSubmit={editingUser ? handleUpdate : handleCreate} className="space-y-5 p-5">
             {error && (
-              <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/8 p-3 text-sm text-accent-error">
+              <div className="flex items-center gap-2 rounded-lg border border-accent-error/30 bg-accent-error/10 p-3 text-sm text-accent-error">
                 <AlertTriangle className="h-4 w-4" />
                 <span>{error}</span>
               </div>
@@ -679,7 +709,7 @@ export default function UsersPage() {
                   id="role"
                   value={formData.role}
                   onChange={(event) => setFormData({ ...formData, role: event.target.value })}
-                  className="h-10 w-full rounded-xl border border-border bg-background-secondary px-3.5 text-sm text-foreground-primary shadow-sm focus:border-border-strong focus:outline-none focus:ring-4 focus:ring-ring"
+                  className="h-9 w-full rounded-lg border border-border bg-background-secondary px-3 text-[13px] text-foreground-primary focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="user">User</option>
                   <option value="admin">Administrator</option>
@@ -702,7 +732,7 @@ export default function UsersPage() {
               <Label className="flex items-center gap-2 text-xs text-foreground-secondary">
                 <SlidersHorizontal className="h-3.5 w-3.5" /> Assigned configurations
               </Label>
-              <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-border bg-background-secondary/70 p-2">
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-border bg-background-secondary p-1.5">
                 {configs.length === 0 ? (
                   <p className="p-3 text-sm text-foreground-muted">No configurations available</p>
                 ) : (
@@ -714,14 +744,14 @@ export default function UsersPage() {
                         type="button"
                         onClick={() => toggleConfigSelection(config.id)}
                         className={cn(
-                          'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm',
+                          'flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px]',
                           selected ? 'bg-accent-primary/10 text-foreground-primary' : 'hover:bg-background-hover'
                         )}
                       >
                         <span className="truncate">{config.name}</span>
                         <div className="flex items-center gap-2">
                           {!config.isActive && <Badge variant="neutral">Disabled</Badge>}
-                          <span className={cn('flex h-5 w-5 items-center justify-center rounded-md border', selected ? 'border-accent-primary bg-accent-primary text-white' : 'border-border')}>
+                          <span className={cn('flex h-5 w-5 items-center justify-center rounded border', selected ? 'border-accent-primary bg-accent-primary text-white' : 'border-border')}>
                             {selected && <Check className="h-3 w-3" />}
                           </span>
                         </div>
@@ -736,25 +766,25 @@ export default function UsersPage() {
               type="button"
               onClick={() => setFormData({ ...formData, isBanned: !formData.isBanned })}
               className={cn(
-                'flex w-full items-center justify-between rounded-xl border p-3 text-left',
-                formData.isBanned ? 'border-accent-error/35 bg-accent-error/8' : 'border-border bg-background-secondary/60'
+                'flex w-full items-center justify-between rounded-lg border p-3 text-left',
+                formData.isBanned ? 'border-accent-error/35 bg-accent-error/10' : 'border-border bg-background-secondary'
               )}
             >
               <div className="flex items-center gap-3">
-                <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl', formData.isBanned ? 'bg-accent-error/10 text-accent-error' : 'bg-background-hover text-foreground-muted')}>
-                  <Ban className="h-4 w-4" />
+                <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', formData.isBanned ? 'bg-accent-error/10 text-accent-error' : 'bg-background-hover text-foreground-muted')}>
+                  <Ban className="h-3.5 w-3.5" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium">Block account</div>
-                  <div className="mt-0.5 text-xs text-foreground-muted">Prevents all subscription access</div>
+                  <div className="text-[13px] font-medium">Block account</div>
+                  <div className="mt-0.5 text-[11px] text-foreground-muted">Prevents all subscription access</div>
                 </div>
               </div>
               <span className={cn('relative h-6 w-11 rounded-full transition-colors', formData.isBanned ? 'bg-accent-error' : 'bg-background-hover ring-1 ring-inset ring-border')}>
-                <span className={cn('absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform', formData.isBanned ? 'translate-x-6' : 'translate-x-1')} />
+                <span className={cn('absolute top-1 h-4 w-4 rounded-full bg-white transition-transform', formData.isBanned ? 'translate-x-6' : 'translate-x-1')} />
               </span>
             </button>
 
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit">{editingUser ? 'Save changes' : 'Create subscription'}</Button>
             </div>
@@ -769,19 +799,19 @@ export default function UsersPage() {
           </DialogHeader>
           {subscriptionUser && (
             <div className="space-y-4">
-              <div className="rounded-xl bg-background-secondary/70 p-4 ring-1 ring-inset ring-border/80">
-                <div className="text-[10px] font-medium uppercase tracking-wider text-foreground-muted">Account</div>
-                <div className="mt-1 truncate text-sm font-medium text-foreground-primary">{subscriptionUser.email}</div>
+              <div className="rounded-lg border border-border bg-background-tertiary p-4">
+                <div className="section-label">Account</div>
+                <div className="mt-1 truncate text-[13px] font-medium text-foreground-primary">{subscriptionUser.email}</div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-background-secondary/70 p-4 ring-1 ring-inset ring-border/80">
-                  <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Current usage</div>
-                  <div className="mt-2 text-xl font-semibold">{subscriptionUser.subscription?.accessCount ?? 0}</div>
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border">
+                <div className="bg-background-tertiary p-4">
+                  <div className="section-label">Current usage</div>
+                  <div className="mt-2 tabular-nums text-xl font-semibold">{subscriptionUser.subscription?.accessCount ?? 0}</div>
                 </div>
-                <div className="rounded-xl bg-background-secondary/70 p-4 ring-1 ring-inset ring-border/80">
-                  <div className="text-[10px] uppercase tracking-wider text-foreground-muted">Access limit</div>
-                  <div className="mt-2 text-xl font-semibold">{subscriptionUser.subscription?.maxAccess === 0 ? '∞' : (subscriptionUser.subscription?.maxAccess ?? 20)}</div>
+                <div className="bg-background-tertiary p-4">
+                  <div className="section-label">Access limit</div>
+                  <div className="mt-2 tabular-nums text-xl font-semibold">{subscriptionUser.subscription?.maxAccess === 0 ? '∞' : (subscriptionUser.subscription?.maxAccess ?? 20)}</div>
                 </div>
               </div>
 
@@ -796,8 +826,8 @@ export default function UsersPage() {
                 />
               </div>
 
-              <div className="rounded-xl border border-accent-warning/30 bg-accent-warning/5 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-accent-warning">
+              <div className="rounded-lg border border-accent-warning/30 bg-accent-warning/10 p-4">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-accent-warning">
                   <AlertTriangle className="h-4 w-4" /> Rotate subscription link
                 </div>
                 <p className="mt-1.5 text-xs leading-5 text-foreground-muted">Creates a new link and invalidates the previous link immediately.</p>
@@ -813,7 +843,7 @@ export default function UsersPage() {
                 </Button>
               </div>
 
-              <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <div className="flex justify-end gap-2 border-t border-border-subtle pt-4">
                 <Button variant="outline" onClick={() => setSubscriptionDialogOpen(false)}>Cancel</Button>
                 <Button onClick={() => void handleUpdateSubscription()}>Save settings</Button>
               </div>
