@@ -15,12 +15,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       <input
         type={type}
         className={cn(
-          'flex h-10 w-full rounded-xl border border-border bg-background-secondary px-3.5 py-2 text-sm text-foreground-primary shadow-sm backdrop-blur-xl',
+          'flex h-9 w-full rounded-lg border border-border bg-background-secondary px-3 py-2 text-[13px] text-foreground-primary',
           'placeholder:text-foreground-placeholder',
-          'focus-visible:border-border-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring',
+          'focus-visible:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'disabled:cursor-not-allowed disabled:opacity-50',
           'file:border-0 file:bg-transparent file:text-sm file:text-foreground-primary',
-          'transition-all duration-fast',
+          'transition-colors duration-fast',
           className
         )}
         ref={ref}
@@ -39,13 +39,13 @@ interface TerminalInputProps extends React.ComponentProps<'input'> {
 
 const TerminalInput = React.forwardRef<HTMLInputElement, TerminalInputProps>(
   ({ className, user = 'workspace', host = 'subscription', path = '~', ...props }, ref) => (
-    <div className="flex h-10 w-full items-center rounded-xl border border-border bg-background-secondary px-3.5 text-sm shadow-sm">
+    <div className="flex h-9 w-full items-center rounded-lg border border-border bg-background-secondary px-3 text-[13px]">
       <span className="mr-2 hidden shrink-0 font-mono text-xs text-foreground-muted sm:inline">
         {user}@{host}:{path}
       </span>
       <input
         className={cn(
-          'min-w-0 flex-1 border-none bg-transparent text-sm text-foreground-primary outline-none placeholder:text-foreground-placeholder',
+          'min-w-0 flex-1 border-none bg-transparent text-[13px] text-foreground-primary outline-none placeholder:text-foreground-placeholder',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
@@ -62,11 +62,11 @@ const InputUnderline = React.forwardRef<HTMLInputElement, React.ComponentProps<'
     <input
       type={type}
       className={cn(
-        'flex h-9 w-full border-0 border-b border-border bg-transparent px-1 py-2 text-sm text-foreground-primary',
+        'flex h-9 w-full border-0 border-b border-border bg-transparent px-1 py-2 text-[13px] text-foreground-primary',
         'placeholder:text-foreground-placeholder',
         'focus-visible:border-accent-primary focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        'transition-all duration-fast',
+        'transition-colors duration-fast',
         className
       )}
       ref={ref}
