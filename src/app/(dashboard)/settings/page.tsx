@@ -193,8 +193,8 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary">
-          <Shield className="h-5 w-5 animate-pulse" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background-secondary text-accent-primary">
+          <Shield className="h-4 w-4 animate-pulse" />
         </div>
         <div className="text-sm text-foreground-muted">Loading workspace settings…</div>
       </div>
@@ -211,36 +211,35 @@ export default function SettingsPage() {
       />
 
       {error && (
-        <div className="flex items-center gap-2 rounded-2xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
+        <div className="flex items-center gap-2 rounded-xl border border-accent-error/30 bg-accent-error/10 p-4 text-sm text-accent-error">
           <AlertTriangle className="h-4 w-4" />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 rounded-2xl border border-accent-success/30 bg-accent-success/10 p-4 text-sm text-accent-success">
+        <div className="flex items-center gap-2 rounded-xl border border-accent-success/30 bg-accent-success/10 p-4 text-sm text-accent-success">
           <Check className="h-4 w-4" />
           <span>{success}</span>
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="h-fit rounded-2xl border border-border bg-background-tertiary/70 p-2 shadow-sm backdrop-blur-xl lg:sticky lg:top-4">
-          <nav className="space-y-1" aria-label="Settings sections">
+      <div className="grid gap-5 lg:grid-cols-[13rem_minmax(0,1fr)]">
+        <aside className="h-fit border-l border-border-subtle pl-2 lg:sticky lg:top-5">
+          <div className="section-label mb-2 px-2">Settings</div>
+          <nav className="space-y-0.5" aria-label="Settings sections">
             {settingsNavigation.map((item) => {
               const Icon = item.icon
               return (
                 <a
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-foreground-muted hover:bg-background-hover hover:text-foreground-primary"
+                  className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-foreground-muted hover:bg-background-hover hover:text-foreground-primary"
                 >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background-secondary ring-1 ring-inset ring-border/80">
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
                   <div className="min-w-0">
-                    <div className="text-sm font-medium">{item.label}</div>
-                    <div className="truncate text-[11px] text-foreground-placeholder">{item.description}</div>
+                    <div className="text-[13px] font-medium">{item.label}</div>
+                    <div className="truncate text-[10px] text-foreground-placeholder">{item.description}</div>
                   </div>
                 </a>
               )
@@ -248,23 +247,24 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-5">
           <Section
             id="profile"
             title="Profile"
             description="Identity associated with this administrative workspace."
+            contentClassName="p-0"
           >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent-primary/10 text-accent-primary ring-1 ring-inset ring-accent-primary/20">
-                <span className="text-lg font-semibold">
+            <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:px-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-primary/10 text-accent-primary">
+                <span className="text-sm font-semibold">
                   {(session?.user?.name || session?.user?.email || 'U').slice(0, 1).toUpperCase()}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-base font-semibold text-foreground-primary">
+                <div className="truncate text-[13px] font-medium text-foreground-primary">
                   {session?.user?.name || 'Workspace owner'}
                 </div>
-                <div className="mt-1 truncate text-sm text-foreground-muted">{session?.user?.email}</div>
+                <div className="mt-0.5 truncate text-xs text-foreground-muted">{session?.user?.email}</div>
               </div>
               <Badge variant="success">Administrator</Badge>
             </div>
@@ -275,7 +275,7 @@ export default function SettingsPage() {
             title="Security"
             description="Use any linked authentication method to access your account."
             actions={<Badge variant="success">{methods.length} linked</Badge>}
-            contentClassName="space-y-3"
+            contentClassName="p-0"
           >
             {methods.length === 0 ? (
               <EmptyState icon={Shield} title="No authentication methods found" description="At least one authentication method is required." />
@@ -284,19 +284,17 @@ export default function SettingsPage() {
                 const Icon = getMethodIcon(method.type)
                 const canUnbind = methods.length > 1
                 return (
-                  <div key={method.type} className="flex flex-col gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-primary/10 text-accent-primary">
-                        <Icon className="h-4 w-4" />
+                  <div key={method.type} className="data-row min-h-[60px]">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background-tertiary text-accent-primary">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-medium text-foreground-primary">{getMethodName(method.type)}</span>
+                        <Badge variant="success">Enabled</Badge>
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground-primary">{getMethodName(method.type)}</span>
-                          <Badge variant="success">Enabled</Badge>
-                        </div>
-                        <div className="mt-1 truncate text-xs text-foreground-muted">
-                          {method.email || `Linked ${formatDate(method.createdAt)}`}
-                        </div>
+                      <div className="mt-0.5 truncate text-[11px] text-foreground-muted">
+                        {method.email || `Linked ${formatDate(method.createdAt)}`}
                       </div>
                     </div>
                     <Button
@@ -314,19 +312,19 @@ export default function SettingsPage() {
             )}
 
             {unboundMethods.length > 0 && (
-              <div className="grid gap-3 pt-2 sm:grid-cols-2">
+              <div className="grid gap-px border-t border-border-subtle bg-border sm:grid-cols-2">
                 {unboundMethods.includes('passkey') && (
                   <button
                     type="button"
                     onClick={() => void handleBindPasskey()}
-                    className="flex items-center gap-3 rounded-xl border border-dashed border-border p-4 text-left hover:border-border-hover hover:bg-background-hover"
+                    className="flex items-center gap-3 bg-background-secondary p-4 text-left hover:bg-background-hover sm:p-5"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-secondary text-foreground-muted">
-                      <Key className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background-tertiary text-foreground-muted">
+                      <Key className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-medium"><Plus className="h-3.5 w-3.5" />Add Passkey</div>
-                      <div className="mt-1 text-xs text-foreground-muted">Biometric or hardware-key sign in</div>
+                      <div className="flex items-center gap-2 text-[13px] font-medium"><Plus className="h-3.5 w-3.5" />Add Passkey</div>
+                      <div className="mt-0.5 text-[11px] text-foreground-muted">Biometric or hardware-key sign in</div>
                     </div>
                   </button>
                 )}
@@ -334,14 +332,14 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => void handleBindGithub()}
-                    className="flex items-center gap-3 rounded-xl border border-dashed border-border p-4 text-left hover:border-border-hover hover:bg-background-hover"
+                    className="flex items-center gap-3 bg-background-secondary p-4 text-left hover:bg-background-hover sm:p-5"
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background-secondary text-foreground-muted">
-                      <Github className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background-tertiary text-foreground-muted">
+                      <Github className="h-3.5 w-3.5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 text-sm font-medium"><Plus className="h-3.5 w-3.5" />Connect GitHub</div>
-                      <div className="mt-1 text-xs text-foreground-muted">Use a linked GitHub account</div>
+                      <div className="flex items-center gap-2 text-[13px] font-medium"><Plus className="h-3.5 w-3.5" />Connect GitHub</div>
+                      <div className="mt-0.5 text-[11px] text-foreground-muted">Use a linked GitHub account</div>
                     </div>
                   </button>
                 )}
@@ -353,10 +351,10 @@ export default function SettingsPage() {
             <div className="space-y-5">
               <div>
                 <div className="mb-2 text-xs font-medium text-foreground-secondary">Color mode</div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {([
                     { value: 'light' as const, label: 'Light', description: 'Bright neutral surfaces', icon: Sun },
-                    { value: 'dark' as const, label: 'Dark', description: 'Premium low-light workspace', icon: Moon },
+                    { value: 'dark' as const, label: 'Dark', description: 'Low-light workspace', icon: Moon },
                   ]).map((option) => {
                     const Icon = option.icon
                     const selected = mode === option.value
@@ -366,16 +364,16 @@ export default function SettingsPage() {
                         type="button"
                         onClick={() => setMode(option.value)}
                         className={cn(
-                          'flex items-center gap-3 rounded-xl border p-4 text-left',
-                          selected ? 'border-accent-primary/45 bg-accent-primary/10 ring-1 ring-accent-primary/15' : 'border-border bg-background-secondary/60 hover:bg-background-hover'
+                          'flex items-center gap-3 rounded-lg border p-3.5 text-left',
+                          selected ? 'border-accent-primary/45 bg-accent-primary/10' : 'border-border bg-background-secondary hover:bg-background-hover'
                         )}
                       >
-                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
-                          <Icon className="h-4 w-4" />
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
+                          <Icon className="h-3.5 w-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium">{option.label}</div>
-                          <div className="mt-0.5 text-xs text-foreground-muted">{option.description}</div>
+                          <div className="text-[13px] font-medium">{option.label}</div>
+                          <div className="mt-0.5 text-[11px] text-foreground-muted">{option.description}</div>
                         </div>
                         {selected && <Check className="h-4 w-4 text-accent-primary" />}
                       </button>
@@ -386,9 +384,9 @@ export default function SettingsPage() {
 
               <div>
                 <div className="mb-2 text-xs font-medium text-foreground-secondary">Interface style</div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {([
-                    { value: 'modern' as const, label: 'SaaS', description: 'Clean cards and modern typography', icon: Laptop },
+                    { value: 'modern' as const, label: 'SaaS', description: 'Flat panels and compact typography', icon: Laptop },
                     { value: 'terminal' as const, label: 'Terminal', description: 'Legacy monospace interface style', icon: TerminalSquare },
                   ]).map((option) => {
                     const Icon = option.icon
@@ -399,16 +397,16 @@ export default function SettingsPage() {
                         type="button"
                         onClick={() => setStyle(option.value)}
                         className={cn(
-                          'flex items-center gap-3 rounded-xl border p-4 text-left',
-                          selected ? 'border-accent-primary/45 bg-accent-primary/10 ring-1 ring-accent-primary/15' : 'border-border bg-background-secondary/60 hover:bg-background-hover'
+                          'flex items-center gap-3 rounded-lg border p-3.5 text-left',
+                          selected ? 'border-accent-primary/45 bg-accent-primary/10' : 'border-border bg-background-secondary hover:bg-background-hover'
                         )}
                       >
-                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
-                          <Icon className="h-4 w-4" />
+                        <div className={cn('flex h-8 w-8 items-center justify-center rounded-lg', selected ? 'bg-accent-primary text-white' : 'bg-background-hover text-foreground-muted')}>
+                          <Icon className="h-3.5 w-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium">{option.label}</div>
-                          <div className="mt-0.5 text-xs text-foreground-muted">{option.description}</div>
+                          <div className="text-[13px] font-medium">{option.label}</div>
+                          <div className="mt-0.5 text-[11px] text-foreground-muted">{option.description}</div>
                         </div>
                         {selected && <Check className="h-4 w-4 text-accent-primary" />}
                       </button>
@@ -419,26 +417,26 @@ export default function SettingsPage() {
             </div>
           </Section>
 
-          <Section id="notifications" title="Notifications" description="Notification delivery follows the existing system configuration.">
-            <div className="flex items-start gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-info/10 text-accent-info">
-                <Bell className="h-4 w-4" />
+          <Section id="notifications" title="Notifications" description="Notification delivery follows the existing system configuration." contentClassName="p-0">
+            <div className="flex items-start gap-3 px-4 py-4 sm:px-5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-info/10 text-accent-info">
+                <Bell className="h-3.5 w-3.5" />
               </div>
               <div>
-                <div className="text-sm font-medium">System-managed notifications</div>
-                <div className="mt-1 text-xs leading-5 text-foreground-muted">There are no user-configurable notification preferences in the current application.</div>
+                <div className="text-[13px] font-medium">System-managed notifications</div>
+                <div className="mt-0.5 text-xs leading-5 text-foreground-muted">There are no user-configurable notification preferences in the current application.</div>
               </div>
             </div>
           </Section>
 
-          <Section id="data" title="Data" description="Data ownership and persistence remain unchanged by this redesign.">
-            <div className="flex items-start gap-3 rounded-xl bg-background-secondary/65 p-4 ring-1 ring-inset ring-border/70">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-success/10 text-accent-success">
-                <Database className="h-4 w-4" />
+          <Section id="data" title="Data" description="Data ownership and persistence remain unchanged by this redesign." contentClassName="p-0">
+            <div className="flex items-start gap-3 px-4 py-4 sm:px-5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-success/10 text-accent-success">
+                <Database className="h-3.5 w-3.5" />
               </div>
               <div>
-                <div className="text-sm font-medium">Existing storage configuration</div>
-                <div className="mt-1 text-xs leading-5 text-foreground-muted">No database schema, models, data structures, or retention behavior were changed.</div>
+                <div className="text-[13px] font-medium">Existing storage configuration</div>
+                <div className="mt-0.5 text-xs leading-5 text-foreground-muted">No database schema, models, data structures, or retention behavior were changed.</div>
               </div>
             </div>
           </Section>
