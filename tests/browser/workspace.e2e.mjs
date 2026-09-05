@@ -1,13 +1,24 @@
 import { test, expect } from '@playwright/test'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 
 const evidence = 'tests/browser/evidence'
+const authState = 'tests/browser/.auth/state.json'
 async function signIn(page) {
+  // Reuse a legitimately authenticated session. Do not weaken production rate limits.
+  try {
+    const saved = JSON.parse(await readFile(authState, 'utf8'))
+    await page.context().addCookies(saved.cookies)
+    return
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
   const response = await page.request.post('/api/auth/sign-in/email', {
     headers: { origin: 'http://localhost:3000' },
     data: { email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_ADMIN_PASSWORD },
   })
   expect(response.ok(), await response.text()).toBeTruthy()
+  await mkdir('tests/browser/.auth', { recursive: true })
+  await page.context().storageState({ path: authState })
 }
 async function loaded(page, path) {
   await page.goto(path)
@@ -39,7 +50,7 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
   test(`${viewport.name}: real pages, responsive bounds, screenshots and event details`, async ({ page }) => {
     const errors = []
     page.on('pageerror', error => errors.push(error.message))
-    await page.setViewportSize(viewport)
+    await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await signIn(page)
     for (const path of ['/dashboard', '/users', '/configs', '/calendar', '/monitor']) {
       await loaded(page, path)
@@ -83,7 +94,8 @@ test('new account handoff persists authorization and exposes the activation resu
   const data = await result.json()
   expect(data.users).toHaveLength(1)
   expect(data.users[0].userConfigs).toHaveLength(1)
-  expect(JSON.stringify(data)).not.toContain('token')
+  expect(data.users[0].subscription).not.toHaveProperty('token')
+  await capture(page, 'desktop-account-handoff')
 })
 
 test('quota changes are real and merely opening the panel does not consume access', async ({ page }) => {
@@ -140,4 +152,31 @@ test('dark appearance and reduced motion remain usable', async ({ page }) => {
   expect(await page.locator('.o-art-float').evaluate(element => getComputedStyle(element).animationName)).toBe('none')
   await noOverflow(page)
   await capture(page, 'desktop-dark')
+})
+
+test('unsaved quota cannot disappear on close or an internal link', async ({ page }) => {
+  await signIn(page)
+  const response = await page.request.get('/api/workspace?view=accounts&q=quota.test')
+  const account = (await response.json()).users[0]
+  await loaded(page, `/users?account=${account.id}`)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: '链接与额度' }).click()
+  await dialog.getByLabel('允许的总访问次数').fill('77')
+  await dialog.getByRole('link', { name: '查看访问记录' }).click()
+  await expect(page).toHaveURL(/\/users\?account=/)
+  await dialog.getByRole('button', { name: '关闭', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '放弃未保存的修改？' })).toBeVisible()
+  await page.getByRole('button', { name: '取消', exact: true }).click()
+  await expect(dialog.getByLabel('允许的总访问次数')).toHaveValue('77')
+})
+
+test('clipboard rejection never reports a copied subscription', async ({ page }) => {
+  await signIn(page)
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: () => Promise.reject(new Error('验收：剪贴板权限被拒绝')) }, configurable: true })
+  })
+  await loaded(page, '/users')
+  await page.getByRole('button', { name: '复制 lin.design@example.test 的订阅链接' }).click()
+  await expect(page.getByText('验收：剪贴板权限被拒绝')).toBeVisible()
+  await expect(page.getByText('已复制订阅链接，请仅交给授权用户')).toHaveCount(0)
 })

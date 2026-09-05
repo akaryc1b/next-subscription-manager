@@ -23,7 +23,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'pnpm start',
+    command: 'node tests/browser/start.mjs',
     cwd: fileURLToPath(new URL('../..', import.meta.url)),
     url: 'http://localhost:3000/login',
     reuseExistingServer: false,
