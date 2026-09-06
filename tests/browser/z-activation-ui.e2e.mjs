@@ -35,3 +35,4 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
     await expect(page.getByLabel('登录密码', { exact: true })).toHaveCount(0)
     await page.screenshot({ path: `tests/browser/evidence/${viewport.name}-activation-complete-ui-fixture.png`, animations: 'disabled' })
   })
+}
