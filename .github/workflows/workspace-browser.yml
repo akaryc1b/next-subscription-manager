@@ -1,0 +1,75 @@
+name: Workspace browser acceptance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workspace-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Product UI / Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: workspace_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d workspace_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/workspace_e2e
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000
+      BETTER_AUTH_SECRET: orbit-browser-test-secret-not-for-production-2026
+      WORKSPACE_E2E: '1'
+      E2E_ADMIN_EMAIL: orbit-admin@example.test
+      E2E_ADMIN_PASSWORD: Orbit-Only-Test-Password-2026!
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:push
+      - name: Seed isolated acceptance database
+        run: node tests/browser/seed.mjs
+      - name: Build production application
+        run: pnpm build
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --prefix tests/browser --ignore-scripts --no-package-lock
+          tests/browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Exercise real application and capture screenshots
+        run: tests/browser/node_modules/.bin/playwright test --config=tests/browser/playwright.config.mjs
+      - name: Upload screenshots and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-browser-evidence
+          path: |
+            tests/browser/evidence/
+            tests/browser/test-results/
+            tests/browser/report/
+          retention-days: 14

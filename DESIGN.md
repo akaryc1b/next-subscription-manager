@@ -1,254 +1,50 @@
-# Subscription Manager — DESIGN.md
+# sub. / Orbit — 产品与交互约束
 
-## 1. Visual theme and atmosphere
+本文件是当前界面的设计入口。实现细节与验收边界见 [Orbit 工作空间](docs/orbit-workspace.md)。不要再使用旧版 SaaS 卡片后台或 Terminal 主题作为新页面的设计基线。
 
-Subscription Manager is a focused personal SaaS workspace, not a generic admin template.
+## 先回答任务，再安排页面
 
-The interface should feel precise, quiet, technical, and immediately usable. It is dark-first, with a light theme that keeps the same structure and contrast hierarchy. The visual language combines:
+这是订阅配置分发与授权管理平台，不是通用基础设施监控。管理员需要明确知道：哪些账户需要处理、为什么不能获取配置、如何交付链接、哪些请求已成功或被拒绝。没有真实数据支撑时，不生成节点在线率、采集进度、健康评分或配置变更历史。
 
-- Linear-inspired near-black surfaces, compact spacing, and a single lavender accent.
-- Vercel-inspired flat panels, hairline borders, and typography-led hierarchy.
-- Stripe-inspired numeric clarity and tabular figures for usage, dates, and counts.
-- Raycast-inspired compact controls, dense navigation, and restrained active states.
+每个展示项必须对应一个问题或下一步操作。默认层级是结论、关联对象、操作，再到技术细节。不要把开发说明、实现注释、数据结构解释写成页面正文。
 
-The application must avoid decorative UI that competes with data. Do not use large atmospheric gradients, floating glass cards, oversized empty hero areas, or repeated KPI-card walls.
+## 当前页面结构
 
-### Product personality
+- 工作台：处理摘要 → 可执行账户队列 → 返回趋势 → 最近访问动态。
+- 订阅账户：可扫描列表 → 授权详情 → 配置直达、链接交付、额度与账户控制。
+- 配置库：元数据与分配范围 → 按需读取内容 → YAML 编辑与影响确认。
+- 访问动态：结果和原因 → 准确时间、来源、客户端、关联账户。
+- 到期日程：具体日期下的账户 → 调整有效期。
+- 登录：明确管理员入口；只展示当前部署支持的 OAuth 入口。
+- 激活：验证邀请 → 设置密码 → 清楚说明激活结果和订阅链接的使用方式。不能将普通用户直接引导到无权访问的后台。
+- 设置：身份、认证、登录会话和外观。不得添加不可用的通知开关、伪备份按钮、没有实际效果的主题选项。
 
-- Premium but restrained.
-- Dense but not cramped.
-- Technical but readable.
-- Calm by default; urgency is reserved for renewal and security states.
-- Task-oriented: every screen should make the next action obvious.
+## 视觉语言
 
-## 2. Color palette and roles
+使用 `src/styles/workspace.css` 和 `src/styles/product.css`。主操作为青柠色，信息强调为电光蓝，纸色/深绿色背景保持同一套结构。品牌资产复用 `BrandMark`、`OrbitalArtwork` 与站点图标；不从第三方动态加载素材或字体。
 
-### Dark theme
+信息结构靠排版、留白、细分隔线和关系组织，不靠每个字段一个卡片。抽屉、表单与确认对话框可以有明确容器，但不要为了装饰重复嵌套。
 
-| Token | Value | Role |
-| --- | --- | --- |
-| Canvas | `#0b0b0d` | App background |
-| Surface 1 | `#111214` | Sidebar, header, primary panels |
-| Surface 2 | `#17181b` | Nested rows and hovered surfaces |
-| Surface 3 | `#1d1e22` | Selected controls and lifted menus |
-| Hairline | `#27282d` | Default borders and dividers |
-| Hairline strong | `#3a3c43` | Focused and emphasized borders |
-| Ink | `#f5f6f7` | Primary text |
-| Ink secondary | `#c8cad0` | Secondary text |
-| Ink muted | `#8b8f98` | Captions and helper text |
-| Ink disabled | `#60636b` | Disabled text |
-| Accent | `#5e6ad2` | Primary actions and active navigation |
-| Accent hover | `#6f7be0` | Hovered primary action |
-| Accent soft | `rgba(94,106,210,.14)` | Selected rows and soft emphasis |
-| Success | `#3fb950` | Healthy and active status |
-| Warning | `#d29922` | Renewal attention and warnings |
-| Danger | `#f85149` | Critical security and destructive action |
-| Info | `#58a6ff` | Informational state |
+使用 Lucide 的一致描边、Radix 的对话框与焦点管理、Motion 的定位反馈。新增组件应能解释为何比已有实现更好，不能只为组件数量添加依赖。
 
-### Light theme
+## 交互底线
 
-| Token | Value | Role |
-| --- | --- | --- |
-| Canvas | `#f6f7f8` | App background |
-| Surface 1 | `#ffffff` | Sidebar, header, primary panels |
-| Surface 2 | `#f1f2f4` | Nested rows and hover |
-| Surface 3 | `#e9eaed` | Selected controls |
-| Hairline | `#dedfe3` | Default borders |
-| Hairline strong | `#b9bcc4` | Focused borders |
-| Ink | `#17181b` | Primary text |
-| Ink secondary | `#3d4047` | Secondary text |
-| Ink muted | `#70747d` | Captions and helper text |
-| Accent | `#5e6ad2` | Primary actions and active navigation |
+主操作必须真正调用对应 API，并检查成功与失败结果。删除、封禁、停用、解绑、轮换以及影响已分配用户的配置修改，要明确后果并确认；取消不产生写入。
 
-### Color rules
+复制订阅链接只读取受保护的元数据，不请求 `/api/sub/:token`，避免预览消耗额度。列表不暴露订阅凭据或 YAML 内容。密码、激活令牌和会话令牌不写入浏览器持久存储、日志或界面说明。
 
-- Accent purple is the only brand color. Do not add decorative cyan or pink gradients.
-- Semantic colors are only for meaningful state, never decoration.
-- Most hierarchy should come from spacing, typography, surface level, and borders.
-- Charts and numeric summaries should prefer neutral ink plus one accent highlight.
+表单的回车提交属于当前可见表单；额度页不得提交账户授权。编辑中离开页面必须受保护：普通链接、命令搜索、应用内历史前进/后退、跨文档退出各有对应保护。不能用静默丢弃换取“顺滑”。
 
-## 3. Typography rules
+加载、无数据、读取失败、操作成功必须区分。读取失败不得生成“正常、0 条”的假象；持有上次数据时明确说明刷新失败。
 
-Use `Inter`, `Geist`, or the system sans stack. Use the mono stack only for tokens, IDs, IP addresses, dates when helpful, and technical labels.
+## 动效与可访问性
 
-| Role | Size | Weight | Line height | Tracking |
-| --- | --- | --- | --- | --- |
-| Page title | 28–32px | 600 | 1.15 | `-0.035em` |
-| Section title | 15–16px | 600 | 1.35 | `-0.015em` |
-| Card metric | 24–30px | 600 | 1.1 | `-0.035em` |
-| Body | 14px | 400 | 1.5 | `0` |
-| Small body | 13px | 400 | 1.45 | `0` |
-| Caption | 11–12px | 500 | 1.35 | `0` |
-| Technical label | 10–11px | 500 | 1.3 | `0.06em` |
-| Button | 13px | 500 | 1 | `-0.01em` |
+动画只用于层级、定位与反馈。系统要求减少动态时，CSS 装饰动画和 Motion 位移都必须减少或停止；不能仅检查动画结束后的状态就宣称支持。
 
-### Typography rules
+按钮、输入框和链接需要可读名称与键盘焦点。移动端表单要保持可操作尺寸，不依赖 hover，不用悬浮按钮遮挡内容。危险操作保留确认和错误反馈，不能仅改变颜色。
 
-- Use sentence case. Do not uppercase headings.
-- Use uppercase only for very small technical taxonomy labels.
-- Apply tabular figures to metrics, dates, quotas, IP addresses, and counts.
-- Keep descriptions short. UI copy should explain the data, not explain the interface.
+## 验收而非盲改
 
-## 4. Component styling
+保持真实 Prisma 类型、类型检查、Lint、单元测试和生产构建。浏览器验收使用独立数据库与实际鉴权，不关闭生产限流、权限或会话校验。
 
-### Buttons
-
-- Default height: 36px. Compact height: 32px. Large height: 40px.
-- Radius: 8px.
-- Primary button: accent fill, white text, no glow, no floating transform.
-- Secondary button: Surface 2 with hairline border.
-- Ghost button: transparent, muted text, Surface 2 on hover.
-- Destructive button: danger fill only for confirmed destructive actions.
-- Focus: 2px accent ring with 2px offset.
-
-### Panels and cards
-
-- Standard radius: 10px or 12px.
-- Border: 1px hairline.
-- Shadow: none in dark mode; extremely subtle in light mode.
-- Avoid card nesting. Rows inside a panel should use dividers or Surface 2, not another full card.
-- Panel headers should be compact and aligned with their content.
-
-### Navigation
-
-- Desktop sidebar width: 240–256px; collapsed width: 68–76px.
-- Active item: Accent soft background, bright text, and a 2px accent indicator.
-- Navigation is grouped by user intent, not implementation type.
-- Labels should be: Overview, Subscriptions, Renewals, Configurations, Activity, Settings.
-
-### Tables and data lists
-
-- Use row-based layouts for subscriptions, renewals, configuration assets, logs, and security events.
-- Header rows are compact, muted, and may use technical-label typography.
-- Row height: 44–56px depending on content.
-- Primary identifier on the left; state and action on the right.
-- Use dividers instead of separate cards for every row.
-
-### Badges
-
-- Radius: 5–6px, not full pill unless it is a filter chip.
-- Height: 20–22px.
-- Use soft semantic background and readable foreground.
-- Badges communicate state only.
-
-### Inputs
-
-- Height: 38–40px.
-- Radius: 8px.
-- Surface 1 background and hairline border.
-- Focus uses hairline strong plus accent ring.
-- Avoid overly large labels and helper blocks.
-
-## 5. Layout principles
-
-### App shell
-
-- The sidebar and utility header form the persistent workspace chrome.
-- The content canvas is flat and scrollable; it should not look like a floating rounded browser window.
-- Desktop content padding: 24–32px.
-- Tablet content padding: 20–24px.
-- Mobile content padding: 16px with bottom navigation safe-area spacing.
-- Maximum content width: 1440px.
-
-### Page hierarchy
-
-Every primary screen follows this order:
-
-1. Compact page header with title, one-sentence context, and actions.
-2. Optional metric strip or filter bar.
-3. Primary task panel.
-4. Secondary context panels.
-5. Empty states only where data is absent.
-
-### Dashboard information architecture
-
-The dashboard is a working overview, not a report gallery.
-
-1. Portfolio headline and current health.
-2. One compact metric strip for subscriptions, requests, configurations, and risk signals.
-3. Renewal queue as the primary operational panel.
-4. Portfolio status and usage ratios as secondary context.
-5. Recent activity and security events as dense lists.
-
-### Spacing scale
-
-Use a 4px base grid:
-
-- 4px micro gap
-- 8px compact gap
-- 12px control gap
-- 16px standard gap
-- 20px panel padding on desktop
-- 24px major layout gap
-- 32px page-section gap
-- 48px only for major empty-state breathing room
-
-## 6. Depth and elevation
-
-- Prefer flat surface hierarchy over blur and shadow.
-- Sidebar and header use Surface 1.
-- Main panels use Surface 1.
-- Nested rows and filters use Surface 2.
-- Menus and dialogs use Surface 3 plus a controlled shadow.
-- Do not use backdrop blur on normal panels.
-- Do not place blurred color orbs behind the application.
-
-## 7. Do and do not
-
-### Do
-
-- Make the most important list or action visually dominant.
-- Keep metrics compact and comparable.
-- Use row density suitable for operational data.
-- Show dates, quotas, and counts with tabular figures.
-- Make active navigation obvious without glow.
-- Use responsive layouts that preserve priority.
-- Reuse shared primitives so all pages stay consistent.
-
-### Do not
-
-- Do not build every section as a separate oversized card.
-- Do not use glassmorphism, liquid orbs, scanlines, or terminal decoration.
-- Do not add gradients to small components.
-- Do not use large rounded rectangles around simple headings.
-- Do not use vague labels such as “Assets” when “Subscriptions” or “Renewals” is clearer.
-- Do not add decorative copy or fake functionality.
-- Do not change business logic, API behavior, authentication, permissions, or data structures during UI work.
-
-## 8. Responsive behavior
-
-### Desktop ≥ 1024px
-
-- Persistent sidebar.
-- Utility header aligned with content.
-- Two-column dashboard where the primary panel is wider.
-- Dense tables and row lists.
-
-### Tablet 768–1023px
-
-- Sidebar becomes a drawer.
-- Two-column metric strip may wrap to 2×2.
-- Main dashboard panels stack when width becomes constrained.
-
-### Mobile < 768px
-
-- Bottom navigation remains available.
-- Header is 52–56px tall.
-- Page title remains compact; actions wrap below when necessary.
-- Metric strip becomes two columns.
-- Data rows become stacked but retain identifier → metadata → state order.
-- Minimum touch target: 44px.
-- Avoid horizontal scrolling except for genuine tables.
-
-## 9. Agent prompt guide
-
-When editing UI in this repository:
-
-1. Read this file before changing layout or components.
-2. Preserve all current behavior and data access.
-3. Start from information architecture, then spacing, then component styling.
-4. Use shared components from `src/components/ui` rather than page-specific visual one-offs.
-5. Keep Accent `#5e6ad2` as the only brand color.
-6. Prefer flat panels, hairline borders, 8–12px radii, and compact controls.
-7. Review desktop, tablet, and mobile behavior before completing the task.
-8. Reject generic admin-dashboard patterns that create walls of identical cards.
+截图必须来自实际页面。测试夹具不等于线上数据，浏览器视口模拟不等于 iPhone 真机测试。合并、部署、外部 OAuth 与硬件通行密钥的验证结果需要分别说明，不能从 CI 通过推导全部完成。
