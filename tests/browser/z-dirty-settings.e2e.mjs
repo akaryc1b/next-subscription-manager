@@ -18,6 +18,6 @@ test('dirty settings protect pointer and keyboard command entry until changes ar
   await expect(page.getByLabel('显示名称', { exact: true })).toHaveValue(original)
   await page.locator('.o-search-trigger').click()
   await expect(page.getByRole('dialog')).toBeVisible()
-  await page.getByRole('option', { name: /订阅账户/ }).click()
+  await page.getByRole('option', { name: '订阅账户 页面', exact: true }).click()
   await expect(page).toHaveURL(/\/users$/)
 })
