@@ -171,7 +171,7 @@ export function AccountsPage() {
     finally { setCopying(null) }
   }
   return <div className="o-page">
-    <PageTitle eyebrow="PEOPLE & ACCESS" title="连接，从授权开始。" description="谁可以使用、还能用多久、拿到哪份配置，在这里清清楚楚楚。" actions={<><Refresh loading={resource.loading} onClick={resource.reload}/><Action variant="primary" onClick={() => navigate('new', '1')}><Plus/>创建账户</Action></>}/>
+    <PageTitle eyebrow="PEOPLE & ACCESS" title="连接，从授权开始。" description="谁可以使用、还能用多久、拿到哪份配置，在这里清清楚楚。" actions={<><Refresh loading={resource.loading} onClick={resource.reload}/><Action variant="primary" onClick={() => navigate('new', '1')}><Plus/>创建账户</Action></>}/>
     <div className="o-toolbar"><div className="o-tabs" aria-label="账户筛选">{accountFilters.slice(0, 3).map(([key, label]) => <button key={key} type="button" aria-pressed={filter === key} onClick={() => { setPage(1); navigate('filter', key) }}>{label}</button>)}</div><label className="o-search"><Search/><input aria-label="搜索账户邮箱" placeholder="搜索邮箱…" value={query} onChange={event => { setQuery(event.target.value); setPage(1) }}/></label><select aria-label="更多账户筛选" className="o-filter-select" value={filter} onChange={event => { setPage(1); navigate('filter', event.target.value) }}>{accountFilters.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></div>
     {resource.error && <Problem message={resource.error} retry={resource.reload}/>}
     {resource.loading && !resource.data ? <Loading/> : resource.data && <>

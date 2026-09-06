@@ -1,6 +1,8 @@
 import { defineConfig } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
 
+const local = (path) => fileURLToPath(new URL(path, import.meta.url))
+
 export default defineConfig({
   testDir: '.',
   testMatch: '*.e2e.mjs',
@@ -9,8 +11,13 @@ export default defineConfig({
   retries: 0,
   timeout: 45000,
   expect: { timeout: 10000 },
-  reporter: [['list'], ['html', { outputFolder: 'tests/browser/report', open: 'never' }], ['json', { outputFile: 'tests/browser/evidence/results.json' }]],
-  outputDir: 'test-results',
+  // Absolute paths avoid reports being nested under tests/browser/tests/browser.
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: local('./report'), open: 'never' }],
+    ['json', { outputFile: local('./evidence/results.json') }],
+  ],
+  outputDir: local('./test-results'),
   use: {
     baseURL: 'http://localhost:3000',
     browserName: 'chromium',
@@ -24,7 +31,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'node tests/browser/start.mjs',
-    cwd: fileURLToPath(new URL('../..', import.meta.url)),
+    cwd: local('../..'),
     url: 'http://localhost:3000/login',
     reuseExistingServer: false,
     timeout: 60000,
