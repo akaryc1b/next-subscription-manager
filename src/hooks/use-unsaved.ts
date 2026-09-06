@@ -12,7 +12,13 @@ export function useUnsaved(dirty: boolean) {
     const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
     const beforeNavigate = (event: MouseEvent) => {
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-      const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null
+      const element = event.target instanceof Element ? event.target : null
+      // Command launchers are buttons rather than anchors. Protect pointer entry
+      // as well as the keyboard shortcut, including non-modal settings forms.
+      if (element?.closest('.o-search-trigger, .o-nav-shortcut')) {
+        event.preventDefault(); event.stopImmediatePropagation(); warn(); return
+      }
+      const anchor = element?.closest('a[href]')
       if (!(anchor instanceof HTMLAnchorElement) || anchor.target === '_blank' || anchor.hasAttribute('download')) return
       const url = new URL(anchor.href, location.href)
       if (url.href === location.href || (url.pathname === location.pathname && url.search === location.search && url.hash)) return
