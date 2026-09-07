@@ -52,23 +52,23 @@ export function ActivationForm({ token }: { token: string | null }) {
     }
   }
 
-  if (loading) return <div className="p-auth-content"><p className="o-eyebrow">YOUR INVITATION</p><h1>正在确认这次邀请。</h1><Loading/></div>
+  if (loading) return <div className="p-auth-content"><h1>验证邀请</h1><Loading/></div>
   if (complete) return (
     <div className="p-auth-content p-activation-complete">
       <span className="p-complete-mark"><Check aria-hidden="true"/></span>
-      <p className="o-eyebrow">YOU ARE ALL SET</p><h1>账户已激活。</h1>
+      <h1>账户已激活。</h1>
       <p className="o-description">{account?.email} 的登录密码已设置。</p>
-      <div className="p-next-step"><Link2/><div><h2>接下来，使用你的订阅链接。</h2><p>把管理员交付的订阅链接导入客户端即可。激活链接不是订阅链接，也不会赋予后台管理权限。</p></div></div>
-      <p className="p-auth-note">还没有订阅链接？请联系邀请你的管理员。<br/>此激活链接已使用，无需再次设置密码。</p>
-      <Link href="/login" className="o-button" data-variant="quiet">管理员登录入口<ArrowRight size={16}/></Link>
+      <div className="p-next-step"><Link2/><div><h2>导入订阅链接</h2><p>把管理员交付的订阅链接导入客户端即可。激活链接不是订阅链接，也不会赋予后台管理权限。</p></div></div>
+      <p className="p-auth-note">没有订阅链接？请联系管理员。</p>
+      <Link prefetch={false} href="/login" className="o-button" data-variant="quiet">管理员登录入口<ArrowRight size={16}/></Link>
     </div>
   )
   if (!account) return (
-    <div className="p-auth-content"><p className="o-eyebrow">INVITATION UNAVAILABLE</p><h1>这次邀请暂时无法使用。</h1><Problem message={error}/><p className="o-description">链接可能已使用或到期。请核对原始邀请，或联系管理员。</p><div className="o-actions">{token && <Action onClick={() => setRevision(value => value + 1)}>重新验证</Action>}<Link href="/login" className="o-button" data-variant="quiet">返回登录<ArrowRight size={16}/></Link></div></div>
+    <div className="p-auth-content"><h1>邀请不可用</h1><Problem message={error}/><p className="o-description">链接可能已使用或到期。请核对原始邀请，或联系管理员。</p><div className="o-actions">{token && <Action onClick={() => setRevision(value => value + 1)}>重新验证</Action>}<Link prefetch={false} href="/login" className="o-button" data-variant="quiet">返回登录<ArrowRight size={16}/></Link></div></div>
   )
   return (
     <div className="p-auth-content">
-      <p className="o-eyebrow">YOUR INVITATION</p><h1>欢迎，{account.displayName}。</h1><p className="o-description">为 <strong>{account.email}</strong> 设置账户密码。</p>
+      <h1>激活账户</h1><p className="o-description">为 <strong>{account.email}</strong> 设置账户密码。</p>
       {error && <Problem message={error}/>}
       <form onSubmit={submit} aria-label="激活账户" aria-busy={busy}>
         <PasswordField id="activate-password" label="登录密码" autoComplete="new-password" value={password} onChange={event => setPassword(event.target.value)} required minLength={12} maxLength={128} disabled={busy} hint="12 到 128 个字符，可使用密码管理器生成。"/>

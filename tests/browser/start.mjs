@@ -6,3 +6,7 @@ if (existsSync('public')) cpSync('public', '.next/standalone/public', { recursiv
 process.env.HOSTNAME = '127.0.0.1'
 process.env.PORT = '3000'
 await import('../../.next/standalone/server.js')
+
+// WebKit upgrades same-origin subresources under production CSP. Serve TLS in
+// acceptance instead of disabling CSP or changing application security headers.
+if (process.env.BROWSER === 'webkit') await import('./tls-proxy.mjs')

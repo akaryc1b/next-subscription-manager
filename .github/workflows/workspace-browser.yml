@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   browser:
-    name: Product UI / Chromium
+    name: Product UI / Chromium + WebKit
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -33,7 +33,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/workspace_e2e
       BETTER_AUTH_URL: http://localhost:3000
-      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000
+      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:3000,https://localhost:3443
       BETTER_AUTH_SECRET: orbit-browser-test-secret-not-for-production-2026
       WORKSPACE_E2E: '1'
       E2E_ADMIN_EMAIL: orbit-admin@example.test
@@ -57,12 +57,20 @@ jobs:
         run: node tests/browser/seed.mjs
       - name: Build production application
         run: pnpm build
+      - name: Check initial route assets and deferred editor chunks
+        run: node scripts/measure-workspace-assets.mjs
       - name: Install isolated browser test tooling
+        id: browser_tools
         run: |
           npm install --prefix tests/browser --ignore-scripts --no-package-lock
-          tests/browser/node_modules/.bin/playwright install --with-deps chromium
+          tests/browser/node_modules/.bin/playwright install --with-deps chromium webkit
       - name: Exercise real application and capture screenshots
         run: tests/browser/node_modules/.bin/playwright test --config=tests/browser/playwright.config.mjs
+      - name: Verify compact mobile flows in WebKit
+        if: ${{ !cancelled() && steps.browser_tools.outcome == 'success' }}
+        env:
+          BROWSER: webkit
+        run: tests/browser/node_modules/.bin/playwright test z-compact-mobile.e2e.mjs --config=tests/browser/playwright.config.mjs
       - name: Upload screenshots and test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -72,4 +80,6 @@ jobs:
             tests/browser/evidence/
             tests/browser/test-results/
             tests/browser/report/
+            tests/browser/report-webkit/
+            tests/browser/test-results-webkit/
           retention-days: 14

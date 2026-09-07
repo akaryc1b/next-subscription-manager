@@ -3,3 +3,5 @@ evidence/
 test-results/
 report/
 .auth/
+report-webkit/
+test-results-webkit/

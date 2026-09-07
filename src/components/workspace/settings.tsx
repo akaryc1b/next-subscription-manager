@@ -15,8 +15,8 @@ import { authMessage, PasswordField, usePasskeySupport } from './auth-ui'
 type Method = { type: 'password' | 'passkey' | 'github'; enabled: boolean; createdAt: string }
 type LoginSession = { id: string; token: string; createdAt: Date | string; expiresAt: Date | string; ipAddress?: string | null; userAgent?: string | null }
 const methodLabels = { password: '邮箱与密码', passkey: '通行密钥', github: 'GitHub' }
-function Section({ id, number, title, description, children }: { id: string; number: string; title: string; description: string; children: ReactNode }) {
-  return <section id={id} className="p-setting-section"><header><p className="o-eyebrow">{number}</p><h2>{title}</h2><p>{description}</p></header><div className="p-setting-content">{children}</div></section>
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return <section id={id} className="p-setting-section"><header><h2>{title}</h2></header><div className="p-setting-content">{children}</div></section>
 }
 function sessionLabel(agent: string | null | undefined) {
   if (!agent) return '未记录客户端'
@@ -131,14 +131,14 @@ export function AccountSettings({ user, currentSessionId, githubEnabled, callbac
   })
 
   return <div className="o-page p-settings">
-    <PageTitle eyebrow="MAKE YOURSELF AT HOME" title="工作空间，也有你的习惯。" description="管理身份与登录安全，选择看着舒服的界面。"/>
+    <PageTitle title="账户设置"/>
     {error && <Problem message={error}/>}
     <nav className="p-settings-nav" aria-label="设置分区"><a href="#identity"><UserRound/>个人资料</a><a href="#authentication"><ShieldCheck/>登录方式</a><a href="#sessions"><Laptop/>登录会话</a><a href="#appearance"><Palette/>外观</a></nav>
-    <Section id="identity" number="01 / IDENTITY" title="你的身份" description="显示名称会用于工作空间中的身份展示，不会改变登录邮箱。">
+    <Section id="identity" title="个人资料">
       <div className="p-identity"><Avatar name={savedName || user.email}/><div><strong>{savedName || '管理员'}</strong><small>{user.email}</small></div><Pill tone="accent">管理员</Pill></div>
       <form onSubmit={saveName} aria-label="修改显示名称"><div className="o-field"><label htmlFor="profile-name">显示名称</label><input id="profile-name" className="o-input" required maxLength={80} value={name} onChange={event => setName(event.target.value)} disabled={busy !== null}/></div><div className="o-actions"><Action type="submit" variant="primary" disabled={!nameDirty || busy !== null}>{busy === 'name' ? '正在保存…' : '保存名称'}</Action>{nameDirty && <Action disabled={busy !== null} onClick={() => setName(savedName)}>撤销修改</Action>}</div></form>
     </Section>
-    <Section id="authentication" number="02 / SIGN IN" title="登录方式" description="优先保留一种可靠的登录方式，再添加更顺手的选择。">
+    <Section id="authentication" title="登录方式">
       {methods.error && <Problem message={methods.error} retry={methods.reload}/>}
       {methods.loading && !methods.data ? <Loading/> : methods.data && <>
         {(['password', 'passkey', 'github'] as const).map(type => {
@@ -157,8 +157,8 @@ export function AccountSettings({ user, currentSessionId, githubEnabled, callbac
         <p className="o-footnote">更新密码会退出其他登录会话，当前会话保留。</p><div className="o-actions"><Action type="submit" variant="primary" disabled={busy !== null}>{busy === 'password' ? '正在更新…' : '更新密码'}</Action><Action disabled={busy !== null} onClick={() => { setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); setPasswordOpen(false) }}>取消修改</Action></div>
       </form>}
     </Section>
-    <Section id="sessions" number="03 / SESSIONS" title="登录会话" description="核对登录时间与来源；发现不熟悉的会话时，主动退出。"><SessionSettings currentSessionId={currentSessionId} revision={sessionRevision}/></Section>
-    <Section id="appearance" number="04 / APPEARANCE" title="看着舒服，就很好。" description="选择此浏览器的显示模式，核心布局和操作保持一致。"><div className="p-theme-choices">{(['light', 'dark'] as const).map(value => <button className="p-theme-choice" data-mode={value} key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}><span className="p-theme-preview" aria-hidden="true"><i/><div><b/><b/><b/></div></span><span>{value === 'light' ? '明亮 · 日间' : '深色 · 夜间'}{mode === value && <Check aria-hidden="true"/>}</span></button>)}</div><p className="o-footnote">动画遵循系统的“减少动态效果”设置。</p></Section>
+    <Section id="sessions" title="登录会话"><SessionSettings currentSessionId={currentSessionId} revision={sessionRevision}/></Section>
+    <Section id="appearance" title="外观"><div className="p-theme-choices">{(['light', 'dark'] as const).map(value => <button className="p-theme-choice" data-mode={value} key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}><span className="p-theme-preview" aria-hidden="true"><i/><div><b/><b/><b/></div></span><span>{value === 'light' ? '明亮 · 日间' : '深色 · 夜间'}{mode === value && <Check aria-hidden="true"/>}</span></button>)}</div></Section>
     {unlink && <Confirm title={`解除${methodLabels[unlink]}绑定？`} description={unlink === 'passkey' ? '这会移除此账户的全部通行密钥。请先确认另一个登录方式可以使用。' : '以后无法再用这种方式登录。请先确认其他已绑定的方式可以使用。'} confirmLabel="解除绑定" onClose={() => setUnlink(null)} onConfirm={async () => {
       await request(`/api/users/${user.id}/auth-methods/${unlink}`, { method: 'DELETE' })
       toast.success('登录方式已解除绑定')

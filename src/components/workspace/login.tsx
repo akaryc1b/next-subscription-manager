@@ -51,9 +51,7 @@ export function LoginForm({ githubEnabled, forbidden, activated, callbackError }
 
   return (
     <div className="p-auth-content">
-      <p className="o-eyebrow">WELCOME BACK</p>
-      <h1>回到你的工作空间。</h1>
-      <p className="o-description">使用管理员账户继续。</p>
+      <h1>管理员登录</h1>
       {activated && <Saved>账户已激活。订阅用户无需登录管理后台，请使用管理员交付的订阅链接。</Saved>}
       {forbidden && <Problem message="此账户没有管理权限。订阅用户请使用管理员交付的订阅链接。"/>}
       {error && <Problem message={error}/>}
@@ -62,13 +60,13 @@ export function LoginForm({ githubEnabled, forbidden, activated, callbackError }
         <PasswordField id="login-password" label="密码" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} disabled={busy} required placeholder="输入你的密码"/>
         <Action variant="primary" type="submit" disabled={busy} className="p-full">{method === 'password' ? '正在登录…' : '进入工作空间'}<ArrowRight/></Action>
       </form>
-      <div className="p-auth-divider"><span/>或者使用已绑定的账户<span/></div>
+      <div className="p-auth-divider"><span/>其他登录方式<span/></div>
       <div className="p-auth-alternatives">
         <Action onClick={() => void signIn('passkey')} disabled={busy || passkeySupported !== true}><Fingerprint/>{method === 'passkey' ? '等待设备验证…' : '通行密钥'}</Action>
         {githubEnabled && <Action onClick={() => void signIn('github')} disabled={busy}><Github/>{method === 'github' ? '前往授权…' : 'GitHub'}</Action>}
       </div>
       {passkeySupported === false && <p className="o-footnote">此浏览器或连接环境不支持通行密钥，请使用密码。</p>}
-      <p className="p-auth-note">首次使用？请打开管理员发送的激活链接。<br/>忘记密码时，请联系另一位管理员重设。</p>
+      <p className="p-auth-note">忘记密码？请联系管理员重设。</p>
     </div>
   )
 }

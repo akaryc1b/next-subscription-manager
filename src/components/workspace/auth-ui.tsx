@@ -4,7 +4,7 @@ import { useEffect, useState, type InputHTMLAttributes, type ReactNode } from 'r
 import Link from 'next/link'
 import { Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/components/theme-provider'
-import { Action, BrandMark, OrbitalArtwork } from './ui'
+import { Action, BrandMark } from './ui'
 
 export function usePasskeySupport() {
   const [supported, setSupported] = useState<boolean | null>(null)
@@ -43,20 +43,13 @@ export function AuthFrame({ children }: { children: ReactNode }) {
   return (
     <div className="orbit-root p-auth">
       <header className="p-auth-top">
-        <Link className="o-brand" href="/login" aria-label="sub. 管理员登录"><span><BrandMark/></span><strong>sub<span>.</span></strong></Link>
+        <Link prefetch={false} className="o-brand" href="/login" aria-label="sub. 管理员登录"><span><BrandMark/></span><strong>sub<span>.</span></strong></Link>
         <Action variant="quiet" onClick={toggleTheme} aria-label={theme === 'dark' ? '切换浅色主题' : '切换深色主题'}>{theme === 'dark' ? <Sun/> : <Moon/>}</Action>
       </header>
       <main className="p-auth-main">
-        <section className="p-auth-story" aria-label="订阅工作空间">
-          <p className="o-eyebrow">A LITTLE LESS FRICTION</p>
-          <h2>连接有序。<br/><span>管理，从容。</span></h2>
-          <p>把配置交给对的人，<br/>把注意力留给重要的事。</p>
-          <OrbitalArtwork/>
-          <div className="p-auth-signature"><span>SUB / ORBIT</span><span>你的订阅工作空间</span></div>
-        </section>
         <section className="p-auth-form">{children}</section>
       </main>
-      <footer className="p-auth-footer"><span>sub. / 订阅工作空间</span><span>账户由管理员邀请，订阅按授权分发。</span></footer>
+      <footer className="p-auth-footer">sub. · 订阅管理</footer>
     </div>
   )
 }

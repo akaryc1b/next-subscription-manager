@@ -29,7 +29,7 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
     page.on('pageerror', error => errors.push(error.message))
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/login')
-    await expect(page.getByRole('heading', { name: '回到你的工作空间。' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '管理员登录' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'GitHub', exact: true })).toHaveCount(0)
     await noOverflow(page)
     await capture(page, `${viewport.name}-login`)
@@ -131,14 +131,13 @@ for (const direction of ['back', 'forward']) {
   })
 }
 
-test('reduced motion disables CSS artwork and re-enables it only with no preference', async ({ page }) => {
+test('reduced motion disables transitions without bringing back decorative artwork', async ({ page }) => {
   await authenticated(page)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await loaded(page, '/dashboard')
-  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
-  await expect(page.locator('.o-art-float')).toHaveCSS('animation-name', 'none')
+  await expect(page.locator('.o-art, .o-hero')).toHaveCount(0)
+  await expect(page.locator('.o-button').first()).toHaveCSS('transition-duration', '0s')
   await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await expect(page.locator('.o-art-float')).toHaveCSS('animation-name', 'orbit-float')
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await expect(page.locator('.o-art-float')).toHaveCSS('animation-name', 'none')
+  await expect(page.locator('.o-art, .o-hero')).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: '工作台', exact: true })).toBeVisible()
 })
