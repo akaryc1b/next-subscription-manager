@@ -47,6 +47,8 @@ for (const target of [
   { query: '远程办公', label: '远程办公 · 备用配置', route: /\/configs\?config=/ },
 ]) {
   test(`command results: ${target.query} cannot activate a previous query during debounce or loading`, async ({ page }) => {
+    // Install before the app creates timers so cleanup cancels the same clock.
+    await page.clock.install()
     await signIn(page)
     await loaded(page, '/dashboard')
     await page.keyboard.press('Control+k')
@@ -62,8 +64,7 @@ for (const target of [
       }
       await route.continue()
     })
-    await page.clock.install()
-    await page.clock.pauseAt(new Date())
+    await page.clock.pauseAt(new Date(Date.now() + 1000))
     try {
       const input = page.getByRole('combobox', { name: '搜索页面、账户或配置' })
       await input.fill(target.query)
