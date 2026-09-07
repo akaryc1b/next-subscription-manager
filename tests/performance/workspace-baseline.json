@@ -1,0 +1,30 @@
+{
+  "revision": "e68f0a90c5fa5f8b4345b0442eac1d527537a22d",
+  "method": "App build manifest: root layout + dashboard layout + page JS; sum of Node gzip level 6 bytes; excludes optional chunks and runtime requests",
+  "routes": {
+    "dashboard": {
+      "bytes": 604366,
+      "gzipBytes": 190299
+    },
+    "users": {
+      "bytes": 620298,
+      "gzipBytes": 195415
+    },
+    "configs": {
+      "bytes": 667915,
+      "gzipBytes": 211777
+    },
+    "monitor": {
+      "bytes": 602748,
+      "gzipBytes": 190016
+    },
+    "calendar": {
+      "bytes": 601761,
+      "gzipBytes": 189501
+    },
+    "settings": {
+      "bytes": 623094,
+      "gzipBytes": 197862
+    }
+  }
+}

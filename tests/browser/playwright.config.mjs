@@ -20,7 +20,7 @@ export default defineConfig({
   outputDir: local('./test-results'),
   use: {
     baseURL: 'http://localhost:3000',
-    browserName: 'chromium',
+    browserName: process.env.BROWSER === 'webkit' ? 'webkit' : 'chromium',
     viewport: { width: 1440, height: 1000 },
     locale: 'zh-CN',
     timezoneId: 'Asia/Shanghai',

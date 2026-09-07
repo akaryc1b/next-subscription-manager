@@ -269,10 +269,10 @@ for (const configs of [0, 1]) {
       trend: Array.from({ length: 7 }, (_, index) => ({ date: new Date(Date.now() - (6 - index) * day).toISOString().slice(0, 10), count: 0 })),
     }) }))
     await loaded(page, '/dashboard')
-    const action = page.locator('.o-hero .o-button[data-variant="primary"]')
+    const action = page.locator('.o-setup-row .o-button')
     await expect(action).toHaveText(configs ? '创建第一个账户' : '准备可用配置')
     await expect(action).toHaveAttribute('href', configs ? '/users?new=1' : '/configs?new=1')
     await action.click()
-    await expect(page.getByRole('dialog').getByRole('heading', { name: configs ? '创建订阅账户' : '创建一份配置', exact: true })).toBeVisible()
+    await expect(page.getByRole('dialog').getByRole('heading', { name: configs ? '创建订阅账户' : '新建配置', exact: true })).toBeVisible()
   })
 }
