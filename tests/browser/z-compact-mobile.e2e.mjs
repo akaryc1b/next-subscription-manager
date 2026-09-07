@@ -76,7 +76,7 @@ test('mobile list copies Shadowrocket directly, preserving gesture while metadat
   await expect(page.getByText('已复制 Shadowrocket 链接', { exact: true })).toBeVisible()
   const text = await page.evaluate(() => window.__copy.text)
   expect(text.startsWith('sub://')).toBe(true)
-  expect(Buffer.from(text.slice(6), 'base64').toString('utf8')).toBe(`http://localhost:3000/api/sub/${before.token}`)
+  expect(Buffer.from(text.slice(6), 'base64').toString('utf8')).toBe(`${new URL(page.url()).origin}/api/sub/${before.token}`)
   expect(metadataReads).toBe(1)
   expect(contentRequests).toEqual([])
   await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -131,4 +131,19 @@ test('small screens retain compact headings, usable inputs and no horizontal ove
   await expect(page.getByRole('dialog', { name: '工作空间导航' })).toBeVisible()
   await page.getByRole('dialog').getByRole('link', { name: '订阅账户', exact: true }).click()
   await expect(page.getByRole('heading', { name: '订阅账户', exact: true })).toBeVisible()
+})
+
+test('mobile native clipboard accepts a Shadowrocket write without consuming quota', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page)
+  const account = (await (await page.request.get('/api/workspace?view=accounts&q=lin.design')).json()).users[0]
+  const before = (await (await page.request.get(`/api/users/${account.id}/subscription`)).json()).subscription.accessCount
+  await loaded(page, '/users')
+  // Real browser clipboard write, no adapter or permission bypass. Reading/pasting
+  // into the external Shadowrocket application still requires a physical device.
+  expect(await page.evaluate(() => typeof navigator.clipboard?.write === 'function')).toBe(true)
+  await page.getByRole('button', { name: '复制 lin.design@example.test 的 Shadowrocket 链接', exact: true }).click()
+  await expect(page.getByText('已复制 Shadowrocket 链接', { exact: true })).toBeVisible()
+  const after = (await (await page.request.get(`/api/users/${account.id}/subscription`)).json()).subscription.accessCount
+  expect(after).toBe(before)
 })
