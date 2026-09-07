@@ -1,4 +1,9 @@
-FROM node:24-alpine AS base
+FROM node:24-alpine3.24 AS base
+
+# Keep the Alpine release stable and require the OpenSSL security fix in every
+# stage. Fail the build if the patched packages cannot be obtained; never ignore
+# the corresponding scanner findings. CI refreshes this layer on every scan.
+RUN apk add --no-cache --upgrade 'libcrypto3>=3.5.8-r0' 'libssl3>=3.5.8-r0'
 
 # Install dependencies only when needed
 FROM base AS deps

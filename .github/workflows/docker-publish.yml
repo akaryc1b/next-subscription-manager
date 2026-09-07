@@ -6,12 +6,8 @@ on:
       - main
     tags:
       - 'v*'
+  # Application-only changes must pass the same image gate before merging.
   pull_request:
-    paths:
-      - Dockerfile
-      - package.json
-      - pnpm-lock.yaml
-      - .github/workflows/docker-publish.yml
   workflow_dispatch:
 
 permissions:
@@ -25,10 +21,21 @@ jobs:
   scan:
     name: Scan amd64 image
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Test vulnerability gate behavior
+        run: node --test tests/security/trivy-gate.node.mjs
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -50,14 +57,27 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
+          pull: true
+          no-cache-filters: base
           load: true
           tags: next-subscription-manager:scan
           labels: ${{ steps.metadata.outputs.labels }}
           cache-from: type=gha,scope=scan-linux-amd64
           cache-to: type=gha,mode=max,scope=scan-linux-amd64
 
+      - name: Record runtime versions from the actual image
+        shell: bash
+        run: |
+          docker run --rm --entrypoint sh next-subscription-manager:scan -ec '
+            node --version
+            node -p "JSON.stringify({next: require(\"next/package.json\").version, openssl: process.versions.openssl})"
+            apk info -v | grep -E "^lib(crypto|ssl)3-"
+          ' | tee runtime-versions.txt
+
       - name: Generate Trivy report
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: linux/amd64
         with:
           image-ref: next-subscription-manager:scan
           format: json
@@ -71,43 +91,21 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: trivy-report-amd64
-          path: trivy-results.json
+          path: |
+            trivy-results.json
+            runtime-versions.txt
           if-no-files-found: error
           retention-days: 14
 
       - name: Enforce vulnerability gate
-        shell: bash
-        run: |
-          count="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL" or .Severity == "HIGH")] | length' trivy-results.json)"
-
-          if [ "$count" -eq 0 ]; then
-            echo "No HIGH or CRITICAL vulnerabilities found."
-            exit 0
-          fi
-
-          echo "HIGH/CRITICAL vulnerabilities detected: $count"
-          printf '%s\n' $'SEVERITY\tPACKAGE\tINSTALLED\tFIXED\tVULNERABILITY'
-          jq -r '
-            [.Results[]?.Vulnerabilities[]?
-              | select(.Severity == "CRITICAL" or .Severity == "HIGH")]
-            | sort_by(.Severity, .PkgName, .VulnerabilityID)[]
-            | [
-                .Severity,
-                .PkgName,
-                .InstalledVersion,
-                (.FixedVersion // "unfixed"),
-                .VulnerabilityID
-              ]
-            | @tsv
-          ' trivy-results.json
-          echo "::error::Container image contains $count HIGH or CRITICAL vulnerabilities."
-          exit 1
+        run: node scripts/check-trivy-report.mjs trivy-results.json linux/amd64
 
   build:
     name: Build ${{ matrix.platform }}
     if: github.event_name != 'pull_request'
     needs: scan
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
     environment: docker
     strategy:
       fail-fast: false
@@ -123,6 +121,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -147,11 +152,39 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
+          pull: true
+          no-cache-filters: base
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager
           labels: ${{ steps.metadata.outputs.labels }}
           outputs: type=image,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=build-${{ matrix.artifact }}
           cache-to: type=gha,mode=max,scope=build-${{ matrix.artifact }}
+
+      # Scan the exact per-platform artifact before allowing the public manifest
+      # to reference it. A separately rebuilt image is not the PR scan artifact.
+      - name: Scan the exact platform digest
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: ${{ matrix.platform }}
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager@${{ steps.build.outputs.digest }}
+          format: json
+          output: trivy-platform.json
+          exit-code: '0'
+          scanners: vuln
+          severity: CRITICAL,HIGH
+
+      - name: Upload platform Trivy report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-report-${{ matrix.artifact }}
+          path: trivy-platform.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enforce platform vulnerability gate
+        run: node scripts/check-trivy-report.mjs trivy-platform.json '${{ matrix.platform }}'
 
       - name: Export image digest
         env:
@@ -173,6 +206,7 @@ jobs:
     if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     environment: docker
 
     steps:
