@@ -10,6 +10,14 @@
 
 管理员可以从旧用户 cookie 中重新登录，也可退出旧会话。普通用户的订阅令牌、额度、分配关系不受影响。升级普通用户为管理员需要新密码，并在同一事务内清理其旧 Account/Passkey 绑定和会话；旧用户自行设置的认证方式不会因此获得管理员权限。旧手工 GitHub ID 绑定入口不再写库，管理员使用设置页的正式 OAuth 流程。
 
+## OAuth 写入边界
+
+Better Auth 1.6.9 的 OAuth 回调在创建会话之前可能新增 Account、刷新 OAuth token 或更新验证状态；显式绑定回调甚至不会创建新会话。仅使用 session.create 钩子不足以拦住这些写入。
+
+`admin-auth-adapter.ts` 在原 Prisma adapter 的实际 Account 新增/更新/批量更新之前按绑定所有者重新检查当前资格，User 更新和 Passkey 创建也受约束。Account 更新通过 where.id 查询实际所有者，或严格的 AND userId 条件定位，拒绝跨所有者改写与宽泛 OR 条件；事务回调继续传递被保护的 adapter。它不以浏览器传入邮箱或旧会话状态代替当前数据库角色。业务管理接口使用原 Prisma client，管理员授权创建或提升账户不受此登录专用限制影响。
+
+专项测试复用生产 auth.options，运行真实 Better Auth state 生成、签名 cookie、回调、数据库读写；仅 GitHub 的 token/profile/emails HTTP 响应使用测试夹具，禁止外部请求。覆盖隐式同邮箱绑定、已有绑定 token 更新、先获准 link-social 后停用/封禁/降级再返回（包括无 session cookie），并保留正常管理员的正向对照。不能称为真实 GitHub 网站端到端或硬件认证验收。
+
 ## 列表
 
 账户默认按创建时间倒序，ID 作为确定性并列排序。到期日程显式指定 sort=expires，按到期时间排序；关注队列保留到期优先。

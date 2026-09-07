@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { canAdminLogin } from './admin-login-policy'
+import { adminAuthAdapter } from './admin-auth-adapter'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { passkey } from '@better-auth/passkey'
 import { prisma } from './prisma'
@@ -16,7 +17,8 @@ const githubClientSecret = process.env.GITHUB_CLIENT_SECRET
 
 export const auth = betterAuth({
   baseURL: authBaseUrl,
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+  database: adminAuthAdapter(prismaAdapter(prisma, { provider: 'postgresql' }), userId =>
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true, isActive: true, isBanned: true } })),
   databaseHooks: {
     session: {
       create: {
