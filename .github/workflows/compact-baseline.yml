@@ -1,0 +1,51 @@
+name: Compact workspace baseline
+on:
+  push:
+    branches: [fix/compact-mobile-workspace]
+    paths: [.github/workflows/compact-baseline.yml]
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Archive tracked sources only
+        run: |
+          mkdir -p /tmp/compact-baseline
+          git archive HEAD -o /tmp/compact-baseline/source.tar
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm build
+      - name: Record initial route assets
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { gzipSync } from 'node:zlib';
+          const { pages } = JSON.parse(readFileSync('.next/app-build-manifest.json'));
+          const result = {};
+          for (const page of ['dashboard','users','configs','monitor','calendar','settings']) {
+            const keys = ['/layout','/(dashboard)/layout',`/(dashboard)/${page}/page`];
+            const files = [...new Set(keys.flatMap(key => pages[key] || []))].filter(file => file.endsWith('.js'));
+            result[page] = { files, bytes: 0, gzipBytes: 0 };
+            for (const file of files) { const bytes = readFileSync(`.next/${file}`); result[page].bytes += bytes.length; result[page].gzipBytes += gzipSync(bytes).length; }
+          }
+          writeFileSync('/tmp/compact-baseline/route-assets.json', JSON.stringify(result,null,2));
+          console.log(JSON.stringify(result,null,2));
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compact-baseline
+          path: /tmp/compact-baseline/
+          retention-days: 7
