@@ -14,15 +14,20 @@ const profileSelect = {
   id: true, userId: true, name: true, isActive: true, createdAt: true, updatedAt: true,
   user: { select: { email: true } }, _count: { select: { userConfigs: true } },
 } satisfies Prisma.ConfigSelect
-function json(data: unknown, status = 200) { return NextResponse.json(data, { status, headers: { 'Cache-Control': 'private, no-store' } }) }
+
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, { status, headers: { 'Cache-Control': 'private, no-store' } })
+}
+
 function accountWhere(filter: string, now: Date): Prisma.UserWhereInput {
   const enabled: Prisma.UserWhereInput = { role: 'user', isActive: true, isBanned: false }
   const expiring: Prisma.UserWhereInput = { ...enabled, expiresAt: { gte: now, lte: new Date(now.getTime() + 7 * DAY) } }
   const expired: Prisma.UserWhereInput = { ...enabled, expiresAt: { lt: now } }
   const unassigned: Prisma.UserWhereInput = { ...enabled, userConfigs: { none: { config: { isActive: true } } } }
   const exhausted: Prisma.UserWhereInput = { ...enabled, subscription: { is: { maxAccess: { gt: 0 }, accessCount: { gte: prisma.subscription.fields.maxAccess } } } }
+  const missingSubscription: Prisma.UserWhereInput = { ...enabled, subscription: { is: null } }
   switch (filter) {
-    case 'attention': return { OR: [expiring, expired, unassigned, exhausted] }
+    case 'attention': return { OR: [expiring, expired, unassigned, exhausted, missingSubscription] }
     case 'expiring': return expiring
     case 'expired': return expired
     case 'unassigned': return unassigned
@@ -32,6 +37,7 @@ function accountWhere(filter: string, now: Date): Prisma.UserWhereInput {
     default: return {}
   }
 }
+
 async function activity(from: Date, to: Date, limit: number, kind = 'all', query = '', userId = ''): Promise<Activity[]> {
   const logsWhere: Prisma.AccessLogWhereInput = {
     accessedAt: { gte: from, lte: to },
@@ -39,12 +45,17 @@ async function activity(from: Date, to: Date, limit: number, kind = 'all', query
     ...(query ? { OR: [{ ipAddress: { contains: query, mode: 'insensitive' } }, { subscription: { user: { email: { contains: query, mode: 'insensitive' } } } }] } : {}),
   }
   const eventsWhere: Prisma.SecurityEventWhereInput = {
-    createdAt: { gte: from, lte: to }, ...(userId ? { userId } : {}),
-    ...(query ? { OR: [{ ipAddress: { contains: query, mode: 'insensitive' } }, { message: { contains: query, mode: 'insensitive' } }] } : {}),
+    createdAt: { gte: from, lte: to },
+    ...(userId ? { userId } : {}),
+    ...(query ? { OR: [
+      { ipAddress: { contains: query, mode: 'insensitive' } },
+      { message: { contains: query, mode: 'insensitive' } },
+      { identifier: { contains: query, mode: 'insensitive' } },
+    ] } : {}),
   }
   const [logs, events] = await Promise.all([
-    kind === 'security' ? [] : prisma.accessLog.findMany({ where: logsWhere, take: limit, orderBy: { accessedAt: 'desc' }, select: { id: true, accessedAt: true, ipAddress: true, userAgent: true, subscription: { select: { user: { select: { id: true, email: true } } } } } }),
-    kind === 'delivery' ? [] : prisma.securityEvent.findMany({ where: eventsWhere, take: limit, orderBy: { createdAt: 'desc' }, select: { id: true, createdAt: true, type: true, severity: true, metadata: true, userId: true, ipAddress: true, userAgent: true, statusCode: true } }),
+    kind === 'security' ? [] : prisma.accessLog.findMany({ where: logsWhere, take: limit, orderBy: [{ accessedAt: 'desc' }, { id: 'desc' }], select: { id: true, accessedAt: true, ipAddress: true, userAgent: true, subscription: { select: { user: { select: { id: true, email: true } } } } } }),
+    kind === 'delivery' ? [] : prisma.securityEvent.findMany({ where: eventsWhere, take: limit, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true, createdAt: true, type: true, severity: true, metadata: true, identifier: true, userId: true, ipAddress: true, userAgent: true, statusCode: true } }),
   ])
   const items: Activity[] = logs.map(log => ({
     id: `delivery-${log.id}`, kind: 'delivery', at: log.accessedAt.toISOString(), title: '订阅内容已返回',
@@ -54,12 +65,19 @@ async function activity(from: Date, to: Date, limit: number, kind = 'all', query
   }))
   for (const event of events) {
     const reason = event.metadata && typeof event.metadata === 'object' && !Array.isArray(event.metadata) ? event.metadata.reason : undefined
-    items.push({ id: `security-${event.id}`, kind: 'security', at: event.createdAt.toISOString(), ...securityCopy(event.type, reason),
+    const copy = securityCopy(event.type, reason)
+    items.push({
+      id: `security-${event.id}`, kind: 'security', at: event.createdAt.toISOString(), ...copy,
+      // The logged identifier describes the request, not a verified account owner.
+      // Activation/subscription identifiers are already masked by the event writer.
+      detail: event.identifier ? `请求标识：${event.identifier} · ${copy.detail}` : copy.detail,
       tone: event.severity === 'critical' || event.severity === 'error' ? 'bad' : event.severity === 'warning' ? 'warn' : 'accent',
-      userId: event.userId, ip: event.ipAddress, agent: event.userAgent, status: event.statusCode })
+      userId: event.userId, ip: event.ipAddress, agent: event.userAgent, status: event.statusCode,
+    })
   }
-  return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit)
+  return items.sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id)).slice(0, limit)
 }
+
 export async function GET(request: NextRequest) {
   try {
     const guard = await requireAdmin(request)
@@ -71,24 +89,31 @@ export async function GET(request: NextRequest) {
     if (!Number.isInteger(page) || page < 1 || page > 100000 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) return json({ error: '分页参数无效' }, 400)
     const q = (params.get('q') || '').trim().slice(0, 200)
     const now = new Date()
-    const pagination = (total: number) => ({ page, pageSize, total, pageCount: Math.ceil(total / pageSize) })
+    const paginate = (total: number) => {
+      const pageCount = Math.ceil(total / pageSize)
+      return { page: Math.min(page, Math.max(1, pageCount)), pageSize, total, pageCount }
+    }
     if (view === 'accounts') {
       const filter = params.get('filter') || 'all'
       if (!accountFilters.some(([key]) => key === filter)) return json({ error: '账户筛选条件无效' }, 400)
       const where: Prisma.UserWhereInput = { AND: [accountWhere(filter, now), ...(q ? [{ email: { contains: q, mode: 'insensitive' as const } }] : []), ...(params.get('id') ? [{ id: params.get('id')! }] : [])] }
-      const [users, total] = await prisma.$transaction([
-        prisma.user.findMany({ where, select: accountSelect, orderBy: [{ expiresAt: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }], skip: (page - 1) * pageSize, take: pageSize }),
-        prisma.user.count({ where }),
-      ])
-      return json({ users, pagination: pagination(total), asOf: now.toISOString() })
+      // Count and read within one snapshot. If a deletion removed the last page,
+      // return the last existing page rather than an empty, invalid page (2 / 1).
+      const result = await prisma.$transaction(async tx => {
+        const pagination = paginate(await tx.user.count({ where }))
+        const users = await tx.user.findMany({ where, select: accountSelect, orderBy: [{ expiresAt: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }], skip: (pagination.page - 1) * pageSize, take: pageSize })
+        return { users, pagination }
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+      return json({ ...result, asOf: now.toISOString() })
     }
     if (view === 'configs') {
       const where: Prisma.ConfigWhereInput = q ? { name: { contains: q, mode: 'insensitive' } } : {}
-      const [configs, total] = await prisma.$transaction([
-        prisma.config.findMany({ where, select: profileSelect, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], skip: (page - 1) * pageSize, take: pageSize }),
-        prisma.config.count({ where }),
-      ])
-      return json({ configs, pagination: pagination(total) })
+      const result = await prisma.$transaction(async tx => {
+        const pagination = paginate(await tx.config.count({ where }))
+        const configs = await tx.config.findMany({ where, select: profileSelect, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], skip: (pagination.page - 1) * pageSize, take: pageSize })
+        return { configs, pagination }
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+      return json(result)
     }
     if (view === 'config') {
       const id = params.get('id')
