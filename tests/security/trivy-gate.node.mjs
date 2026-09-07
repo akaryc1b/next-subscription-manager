@@ -44,3 +44,13 @@ test('CLI returns distinct statuses for safe, blocked and unreadable reports', (
     assert.equal(run('missing.json').status, 2)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+
+test('the expected image platform must match scanned image metadata', () => {
+  const arm = { ...report([]), Metadata: { ImageConfig: { os: 'linux', architecture: 'arm64' } } }
+  assert.deepEqual(blockingFindings(arm, 'linux/arm64'), [])
+  assert.throws(() => blockingFindings(arm, 'linux/amd64'))
+})
+test('missing platform metadata and unsupported expectations are rejected', () => {
+  assert.throws(() => blockingFindings(report([]), 'linux/arm64'))
+  assert.throws(() => blockingFindings(report([]), 'invalid'))
+})

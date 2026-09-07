@@ -76,6 +76,8 @@ jobs:
 
       - name: Generate Trivy report
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: linux/amd64
         with:
           image-ref: next-subscription-manager:scan
           format: json
@@ -96,7 +98,7 @@ jobs:
           retention-days: 14
 
       - name: Enforce vulnerability gate
-        run: node scripts/check-trivy-report.mjs trivy-results.json
+        run: node scripts/check-trivy-report.mjs trivy-results.json linux/amd64
 
   build:
     name: Build ${{ matrix.platform }}
@@ -162,6 +164,8 @@ jobs:
       # to reference it. A separately rebuilt image is not the PR scan artifact.
       - name: Scan the exact platform digest
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PLATFORM: ${{ matrix.platform }}
         with:
           image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/next-subscription-manager@${{ steps.build.outputs.digest }}
           format: json
@@ -180,7 +184,7 @@ jobs:
           retention-days: 14
 
       - name: Enforce platform vulnerability gate
-        run: node scripts/check-trivy-report.mjs trivy-platform.json
+        run: node scripts/check-trivy-report.mjs trivy-platform.json '${{ matrix.platform }}'
 
       - name: Export image digest
         env:

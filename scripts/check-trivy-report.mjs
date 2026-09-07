@@ -6,12 +6,21 @@ const severities = new Set(['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value)
 
 /** Missing or malformed scan data is an error, never evidence of zero findings. */
-export function blockingFindings(report) {
+export function blockingFindings(report, expectedPlatform) {
   if (!isObject(report) || report.SchemaVersion !== 2 || report.ArtifactType !== 'container_image') {
     throw new Error('Expected a Trivy schema-v2 container image report.')
   }
   if (!Array.isArray(report.Results) || report.Results.length === 0) {
     throw new Error('The scan report contains no package scan results.')
+  }
+  if (expectedPlatform !== undefined) {
+    if (!['linux/amd64', 'linux/arm64'].includes(expectedPlatform)) {
+      throw new Error('Unsupported expected image platform.')
+    }
+    const image = report.Metadata?.ImageConfig
+    if (!isObject(image) || `${image.os}/${image.architecture}` !== expectedPlatform) {
+      throw new Error(`Scan architecture does not match ${expectedPlatform}.`)
+    }
   }
   const findings = []
   for (const result of report.Results) {
@@ -36,8 +45,8 @@ export function blockingFindings(report) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    if (!process.argv[2]) throw new Error('Usage: node scripts/check-trivy-report.mjs <report.json>')
-    const findings = blockingFindings(JSON.parse(readFileSync(process.argv[2], 'utf8')))
+    if (!process.argv[2]) throw new Error('Usage: node scripts/check-trivy-report.mjs <report.json> [linux/amd64|linux/arm64]')
+    const findings = blockingFindings(JSON.parse(readFileSync(process.argv[2], 'utf8')), process.argv[3])
     console.log(`HIGH/CRITICAL findings: ${findings.length}`)
     // Keep untrusted report text on a single line; do not interpret it as commands.
     const cell = value => String(value ?? 'unfixed').replace(/[\r\n\t]/g, ' ')
