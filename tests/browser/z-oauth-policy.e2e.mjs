@@ -10,15 +10,23 @@ const db = new PrismaClient()
 const owned = []
 const origin = 'http://localhost:3000'
 let production
+let previousPrisma
 
 test.beforeAll(async () => {
   // Reuse the shipped auth options, session hook and guarded adapter. Only the
   // external provider is configured as a fixture; the app has no test bypass.
+  // The source module normally runs inside Next's CommonJS-capable bundle.
+  // Reuse the real isolated Prisma connection via its existing lazy cache when
+  // importing it as native ESM here; no adapter or database method is mocked.
+  previousPrisma = globalThis.prisma
+  globalThis.prisma = db
   production = (await tsImport('../../src/lib/auth.ts', import.meta.url)).auth
 })
 test.afterAll(async () => {
   await db.user.deleteMany({ where: { id: { in: owned } } })
   await db.$disconnect()
+  if (previousPrisma === undefined) delete globalThis.prisma
+  else globalThis.prisma = previousPrisma
 })
 
 async function setup({ bound = false, explicit = false } = {}) {
@@ -125,8 +133,8 @@ for (const [label, state] of denied) {
 }
 test('eligible administrators retain real OAuth sign-in and explicit linking paths', async () => {
   test.setTimeout(90000)
-  for (const explicit of [false, true]) {
-    const flow = await setup({ explicit })
+  for (const explicit of [false, true]) for (const bound of [false, true]) {
+    const flow = await setup({ explicit, bound })
     const response = await flow.callback()
     expect(response.status).toBe(302)
     expect(response.headers.get('location')).toBe(`${origin}/${explicit ? 'settings' : 'dashboard'}`)
