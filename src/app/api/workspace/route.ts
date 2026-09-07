@@ -95,13 +95,15 @@ export async function GET(request: NextRequest) {
     }
     if (view === 'accounts') {
       const filter = params.get('filter') || 'all'
+      const sort = params.get('sort') || 'created'
+      if (!['created', 'expires'].includes(sort)) return json({ error: '账户排序条件无效' }, 400)
       if (!accountFilters.some(([key]) => key === filter)) return json({ error: '账户筛选条件无效' }, 400)
       const where: Prisma.UserWhereInput = { AND: [accountWhere(filter, now), ...(q ? [{ email: { contains: q, mode: 'insensitive' as const } }] : []), ...(params.get('id') ? [{ id: params.get('id')! }] : [])] }
       // Count and read within one snapshot. If a deletion removed the last page,
       // return the last existing page rather than an empty, invalid page (2 / 1).
       const result = await prisma.$transaction(async tx => {
         const pagination = paginate(await tx.user.count({ where }))
-        const users = await tx.user.findMany({ where, select: accountSelect, orderBy: [{ expiresAt: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }], skip: (pagination.page - 1) * pageSize, take: pageSize })
+        const users = await tx.user.findMany({ where, select: accountSelect, orderBy: sort === 'expires' ? [{ expiresAt: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }] : [{ createdAt: 'desc' }, { id: 'desc' }], skip: (pagination.page - 1) * pageSize, take: pageSize })
         return { users, pagination }
       }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
       return json({ ...result, asOf: now.toISOString() })

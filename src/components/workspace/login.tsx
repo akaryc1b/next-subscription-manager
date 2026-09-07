@@ -4,10 +4,10 @@ import { useRef, useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Fingerprint, Github } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
-import { Action, Problem, Saved } from './ui'
+import { Action, Problem } from './ui'
 import { authMessage, PasswordField, usePasskeySupport } from './auth-ui'
 
-export function LoginForm({ githubEnabled, forbidden, activated, callbackError }: { githubEnabled: boolean; forbidden: boolean; activated: boolean; callbackError: boolean }) {
+export function LoginForm({ githubEnabled, forbidden, callbackError }: { githubEnabled: boolean; forbidden: boolean; callbackError: boolean }) {
   const router = useRouter()
   const passkeySupported = usePasskeySupport()
   const [email, setEmail] = useState('')
@@ -52,7 +52,6 @@ export function LoginForm({ githubEnabled, forbidden, activated, callbackError }
   return (
     <div className="p-auth-content">
       <h1>管理员登录</h1>
-      {activated && <Saved>账户已激活。订阅用户无需登录管理后台，请使用管理员交付的订阅链接。</Saved>}
       {forbidden && <Problem message="此账户没有管理权限。订阅用户请使用管理员交付的订阅链接。"/>}
       {error && <Problem message={error}/>}
       <form onSubmit={event => void signIn('password', event)} aria-label="管理员登录" aria-busy={busy}>
