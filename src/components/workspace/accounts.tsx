@@ -30,7 +30,10 @@ export function ProfilePicker({ selected, onChange }: { selected: string[]; onCh
   const search = useDebounced(query)
   const resource = useResource<ProfileList>(`/api/workspace?view=configs&pageSize=10&page=${page}&q=${encodeURIComponent(search)}`)
   return <div className="o-config-picker">
-    <label className="o-search"><Search/><input value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} placeholder="查找要授权的配置" aria-label="查找配置"/></label>
+    <label className="o-search"><Search/><input value={query} onChange={event => { setQuery(event.target.value); setPage(1) }} onKeyDown={event => {
+      // Searching inside an editor must never submit the surrounding account form.
+      if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.preventDefault()
+    }} placeholder="查找要授权的配置" aria-label="查找配置"/></label>
     {resource.error && <Problem message={resource.error} retry={resource.reload}/>}
     {resource.data?.configs.map(config => <label className="o-picker-row" key={config.id}><input type="checkbox" checked={selected.includes(config.id)} onChange={() => onChange(selected.includes(config.id) ? selected.filter(id => id !== config.id) : [...selected, config.id])}/><span>{config.name}</span><small>{config.isActive ? '已启用' : '已停用'}</small></label>)}
     {resource.loading && !resource.data && <p className="o-footnote" style={{ padding: 12 }}>正在读取配置…</p>}
