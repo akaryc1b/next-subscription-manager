@@ -4,7 +4,6 @@ import { hashPassword } from 'better-auth/crypto'
 import { randomBytes, randomUUID, createHmac } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
-// No production database or user-supplied token can be used by this suite.
 const database = new URL(process.env.DATABASE_URL || 'invalid:')
 if (process.env.WORKSPACE_E2E !== '1' || !['localhost', '127.0.0.1'].includes(database.hostname) || database.pathname !== '/workspace_e2e') throw new Error('Administrator fixtures require the isolated local workspace_e2e database.')
 const db = new PrismaClient()
@@ -27,7 +26,6 @@ async function legacySession(page, userId) {
   const state = JSON.parse(await readFile('tests/browser/.auth/state.json', 'utf8'))
   const cookie = state.cookies.find(cookie => cookie.name.endsWith('.session_token'))
   expect(cookie).toBeTruthy()
-  // Check our fixture signing scheme against a genuinely issued session first.
   const [realToken, realSignature] = decodeURIComponent(cookie.value).split('.')
   const sign = token => createHmac('sha256', process.env.BETTER_AUTH_SECRET).update(token).digest('base64')
   expect(sign(realToken)).toBe(realSignature)
@@ -36,7 +34,15 @@ async function legacySession(page, userId) {
   await page.context().addCookies([{ ...cookie, value: encodeURIComponent(`${token}.${sign(token)}`) }])
 }
 async function login(page, email, chosenPassword = password) {
-  return page.request.post('/api/auth/sign-in/email', { headers, data: { email, password: chosenPassword } })
+  const send = () => page.request.post('/api/auth/sign-in/email', { headers, data: { email, password: chosenPassword } })
+  const response = await send()
+  if (response.status() !== 429) return response
+  // Respect the real server's short burst window. Never disable its limiter,
+  // change the client IP, or retry authorization failures. Long lockouts fail.
+  const retry = Number(response.headers()['x-retry-after'] ?? response.headers()['retry-after'])
+  expect(Number.isFinite(retry) && retry >= 0 && retry <= 15).toBe(true)
+  await new Promise(resolve => setTimeout(resolve, (retry + 1) * 1000))
+  return send()
 }
 async function get(page, path) {
   const response = await page.request.get(path)
@@ -124,7 +130,6 @@ for (const [label, data] of [['subscriber', { role: 'user' }], ['disabled admin'
   test(`a signed legacy ${label} session cannot read or mutate authentication`, async ({ page }) => {
     const user = await fixture(data, true)
     await legacySession(page, user.id)
-    // 403 (not 401) proves the fixture is a recognized, signed session.
     expect((await page.request.get('/api/workspace')).status()).toBe(403)
     expect(await get(page, '/api/auth/get-session')).toBeNull()
     const account = await db.account.findFirstOrThrow({ where: { userId: user.id } })

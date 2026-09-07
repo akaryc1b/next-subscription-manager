@@ -39,7 +39,7 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
     await page.getByRole('button', { name: '隐藏密码', exact: true }).click()
     await page.goto('/activate')
     await expect(page.getByRole('heading', { name: '此链接已停用' })).toBeVisible()
-    await expect(page.getByRole('link', { name: '管理员登录' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '管理员登录', exact: true })).toBeVisible()
     await noOverflow(page)
     await capture(page, `${viewport.name}-invitation-unavailable`)
     await authenticated(page)
@@ -76,7 +76,7 @@ test('failed settings reads do not enable authentication removal', async ({ page
   await expect(page.getByRole('button', { name: '保留此方式' })).toBeDisabled()
 })
 
-test('retired activation pages never verify or reveal a URL token', async ({ page }) => {
+test('retired activation pages never call the token verification API', async ({ page }) => {
   const requests = []
   page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/activate/')) requests.push(request.url()) })
   await page.goto('/activate?token=invalid-fixture')
