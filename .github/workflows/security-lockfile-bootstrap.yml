@@ -1,0 +1,75 @@
+name: Prepare security lockfile
+
+# Temporary, branch-scoped preparation. Removed before the repair PR is opened.
+on:
+  push:
+    branches: [fix/orbit-release-security]
+    paths: [.github/workflows/security-lockfile-bootstrap.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    if: github.repository == 'akaryc1b/next-subscription-manager' && github.ref == 'refs/heads/fix/orbit-release-security'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Apply only the reviewed security version targets
+        run: |
+          mkdir -p security-evidence
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+          pkg.dependencies.next = '15.5.21'
+          pkg.devDependencies['eslint-config-next'] = '15.5.21'
+          pkg.devDependencies.postcss = '8.5.18'
+          delete pkg.pnpm.overrides['postcss@<8.5.10']
+          pkg.pnpm.overrides['postcss@<8.5.18'] = '8.5.18'
+          pkg.pnpm.overrides['nanoid@>=3.0.0 <3.3.18'] = '3.3.18'
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n')
+          NODE
+          pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+          pnpm install --frozen-lockfile --ignore-scripts
+          git diff --stat > security-evidence/change-stat.txt
+          git diff -- package.json pnpm-lock.yaml > security-evidence/dependency.patch
+          pnpm list --depth 0 --json > security-evidence/installed.json
+          pnpm why next postcss nanoid > security-evidence/dependency-paths.txt
+          cp package.json pnpm-lock.yaml security-evidence/
+      - name: Store generated files as Git blobs, without updating any branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for file in package.json pnpm-lock.yaml; do
+            jq -n --rawfile content "$file" '{content: $content, encoding: "utf-8"}' > "$RUNNER_TEMP/blob-input.json"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input "$RUNNER_TEMP/blob-input.json" --jq .sha > "security-evidence/$file.blob-sha"
+          done
+          printf '%s\n' "$GITHUB_SHA" > security-evidence/source-commit.txt
+      - name: Verify patched Alpine packages are available
+        run: |
+          set -euo pipefail
+          docker run --rm --pull always node:24-alpine3.24 sh -ec '
+            apk add --no-cache --upgrade "libcrypto3>=3.5.8-r0" "libssl3>=3.5.8-r0"
+            apk info -v libcrypto3 libssl3
+            node --version
+          ' 2>&1 | tee security-evidence/alpine-package-probe.txt
+      - name: Upload generated lock and preparation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-lockfile-preparation
+          path: security-evidence/
+          if-no-files-found: error
+          retention-days: 14
