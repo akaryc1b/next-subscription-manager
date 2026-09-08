@@ -1,0 +1,40 @@
+name: Prepare phone delivery breakpoint
+on:
+  pull_request:
+    paths:
+      - .github/workflows/pr28-refine.yml
+permissions:
+  contents: write
+jobs:
+  refine:
+    if: github.event.pull_request.number == 28 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/admin-only-subscription-accounts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+      - name: Keep complete delivery labels single-column at all phone widths
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD^)" = a8368171330b9f88ef23bb7b8730ad711fe3a664
+          python3 - <<'PY'
+          from pathlib import Path
+          def replace(path, old, new):
+              p = Path(path)
+              source = p.read_text()
+              assert source.count(old) == 1, f'Unexpected source: {path}: {old[:100]}'
+              p.write_text(source.replace(old, new))
+          replace('src/styles/workspace.css', '@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}}', '@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}.o-delivery-actions:not([data-compact]){grid-template-columns:minmax(0,1fr)}}')
+          replace('tests/browser/z-compact-mobile.e2e.mjs', "      for (const theme of ['light', 'dark']) {", "      for (const width of [390, 430]) for (const theme of ['light', 'dark']) {\n        await page.setViewportSize({ width, height: 844 })")
+          replace('tests/browser/z-compact-mobile.e2e.mjs', '${browserName}-delivery-${label}-${theme}.png', '${browserName}-delivery-${label}-${width}-${theme}.png')
+          PY
+          node --check tests/browser/z-compact-mobile.e2e.mjs
+          git diff --check
+          git add src/styles/workspace.css tests/browser/z-compact-mobile.e2e.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: keep full delivery actions readable across phone widths'
+          git push origin HEAD:fix/admin-only-subscription-accounts
+          git rev-parse HEAD
