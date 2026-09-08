@@ -12,6 +12,8 @@ const owned = []
 const origin = 'http://localhost:3000'
 let production
 let previousPrisma
+const providerEnvironment = ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET']
+const previousProviderEnvironment = new Map()
 
 test.beforeAll(async () => {
   // Reuse the shipped auth options, session hook and guarded adapter. Only the
@@ -21,11 +23,20 @@ test.beforeAll(async () => {
   // importing it as native ESM here; no adapter or database method is mocked.
   previousPrisma = globalThis.prisma
   globalThis.prisma = db
+  for (const key of providerEnvironment) {
+    previousProviderEnvironment.set(key, process.env[key])
+    process.env[key] = `isolated-${key.toLowerCase()}`
+  }
   production = (await tsImport('../../src/lib/auth.ts', import.meta.url)).auth
 })
 test.afterAll(async () => {
   await db.user.deleteMany({ where: { id: { in: owned } } })
   await db.$disconnect()
+  for (const key of providerEnvironment) {
+    const value = previousProviderEnvironment.get(key)
+    if (value === undefined) delete process.env[key]
+    else process.env[key] = value
+  }
   if (previousPrisma === undefined) delete globalThis.prisma
   else globalThis.prisma = previousPrisma
 })
@@ -35,9 +46,11 @@ async function setup({ bound = false, explicit = false, role = 'admin', legacy =
   owned.push(user.id)
   const providerId = randomUUID()
   if (bound) await db.account.create({ data: { userId: user.id, providerId: 'github', accountId: providerId, accessToken: 'fixture-original-token' } })
-  const instance = betterAuth({ ...production.options, socialProviders: {
-    github: { clientId: 'fixture-client-id', clientSecret: 'fixture-client-secret', disableImplicitSignUp: true },
-  } })
+  // Use the actual shipped factory/adapter/hook graph. tsImport isolates module
+  // identity; copying options into a second native-ESM factory disconnects the
+  // request-state keys used by getOAuthState from the source-loaded guard.
+  const instance = production
+  expect(instance.options.socialProviders.github).toBeTruthy()
   // Legacy state is produced by the real library without the new initiation
   // hook. The callback always goes through the shipped, guarded options.
   const starter = legacy ? betterAuth({ ...instance.options, hooks: undefined,
@@ -262,3 +275,15 @@ test('explicit callback waits for session revocation and refuses the binding aft
   expect(await db.account.count({ where: { userId: flow.user.id } })).toBe(0)
   expect(await db.session.count({ where: { userId: flow.user.id } })).toBe(0)
 })
+
+
+for (const forged of [false, true]) {
+  test(`legacy explicit state cannot authorize a live administrator session (forged proof: ${forged})`, async () => {
+    const flow = await setup({ explicit: true, legacy: true,
+      additionalData: forged ? (user, session) => ({ adminLinkAuthorization: { userId: user.id, sessionId: session.id, signature: '0'.repeat(64) } }) : undefined,
+    })
+    expect(await db.session.count({ where: { id: flow.sessionId } })).toBe(1)
+    await expectDenied(await flow.callback())
+    expect(await db.account.count({ where: { userId: flow.user.id } })).toBe(0)
+  })
+}

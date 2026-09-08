@@ -161,6 +161,11 @@ async function matchingDeliveryActions(group) {
   const rocket = group.locator('[data-link-kind="shadowrocket"]')
   await expect(ordinary).toBeVisible()
   await expect(rocket).toBeVisible()
+  // Observe the final rendered theme, not different frames of a color transition.
+  await group.evaluate(async element => {
+    const animations = element.getAnimations({ subtree: true }).filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+    await Promise.allSettled(animations.map(animation => animation.finished))
+  })
   const style = element => {
     const css = getComputedStyle(element)
     const icon = getComputedStyle(element.querySelector('svg'))
