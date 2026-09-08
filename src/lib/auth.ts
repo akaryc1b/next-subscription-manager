@@ -44,7 +44,16 @@ export const auth = betterAuth({
     github: { clientId: githubClientId, clientSecret: githubClientSecret, disableImplicitSignUp: true },
   } : {},
   plugins: [passkey()],
-  account: { accountLinking: { enabled: true, trustedProviders: ['github'], allowDifferentEmails: false } },
+  account: {
+    accountLinking: {
+      enabled: true,
+      // A matching provider email is not authorization to add an admin login.
+      // This also rejects sign-in callbacks started before an account's promotion.
+      disableImplicitLinking: true,
+      trustedProviders: ['github'],
+      allowDifferentEmails: false,
+    },
+  },
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24, cookieCache: { enabled: false } },
   trustedOrigins,
 })
