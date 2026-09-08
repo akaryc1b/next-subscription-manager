@@ -1,0 +1,25 @@
+name: PR28 source audit bundle
+on:
+  push:
+    branches: [fix/admin-only-subscription-accounts]
+    paths: [.github/workflows/pr28-audit-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    if: github.repository == 'akaryc1b/next-subscription-manager'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive tracked source only
+        run: |
+          mkdir -p /tmp/pr28-audit-source
+          git archive --format=tar HEAD > /tmp/pr28-audit-source/source.tar
+          git rev-parse HEAD > /tmp/pr28-audit-source/commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr28-audit-source
+          path: /tmp/pr28-audit-source/
+          retention-days: 1
