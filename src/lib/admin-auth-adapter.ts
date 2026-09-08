@@ -2,6 +2,7 @@ import { APIError } from 'better-auth/api'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { canAdminLogin, type LoginAccount } from './admin-login-policy'
+import { lockAdminLinkSession } from './admin-oauth-link'
 
 type AdapterFactory = ReturnType<typeof prismaAdapter>
 type Adapter = ReturnType<AdapterFactory>
@@ -23,6 +24,7 @@ async function lockEligibleUser(tx: Transaction, userId: unknown) {
     FROM users WHERE id = ${userId} FOR UPDATE
   `
   if (!canAdminLogin(users[0])) denied()
+  await lockAdminLinkSession(tx, userId)
 }
 
 /** Auth-only writes serialize against administrator status changes. */
