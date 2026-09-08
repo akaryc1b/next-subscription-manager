@@ -1,0 +1,52 @@
+name: Prepare narrow-screen delivery spacing
+on:
+  pull_request:
+    paths:
+      - .github/workflows/pr28-refine.yml
+permissions:
+  contents: write
+jobs:
+  refine:
+    if: github.event.pull_request.number == 28 && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/admin-only-subscription-accounts'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 2
+      - name: Prevent button label crowding without changing copy behavior
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD^)" = 5b58d5ee9d0c3c8cf0f81ab43e9fb1545286baa1
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/styles/workspace.css')
+          source = p.read_text()
+          old = 'grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr))'
+          assert source.count(old) == 1
+          p.write_text(source.replace(old, 'grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))'))
+          p = Path('tests/browser/z-compact-mobile.e2e.mjs')
+          source = p.read_text()
+          old = "  await expect(group.locator('.o-rocket-copy')).toHaveCount(0)"
+          assert source.count(old) == 1
+          new = old + '''
+            const contentFits = await group.evaluate(element => [...element.querySelectorAll('button')].every(button => {
+              const box = button.getBoundingClientRect()
+              const css = getComputedStyle(button)
+              const icon = button.querySelector('svg').getBoundingClientRect()
+              const label = button.querySelector('span').getBoundingClientRect()
+              return icon.left >= box.left + parseFloat(css.borderLeftWidth) + parseFloat(css.paddingLeft) - 1
+                && label.right <= box.right - parseFloat(css.borderRightWidth) - parseFloat(css.paddingRight) + 1
+            }))
+            expect(contentFits, 'Delivery icons and labels must stay inside the padded button bounds').toBe(true)'''
+          p.write_text(source.replace(old, new))
+          PY
+          node --check tests/browser/z-compact-mobile.e2e.mjs
+          git diff --check
+          git add src/styles/workspace.css tests/browser/z-compact-mobile.e2e.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'fix: prevent full delivery labels from crowding narrow-screen buttons'
+          git push origin HEAD:fix/admin-only-subscription-accounts
+          git rev-parse HEAD
