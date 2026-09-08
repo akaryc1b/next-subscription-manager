@@ -127,20 +127,36 @@ for (const identity of ['anonymous', 'forged cookie', 'subscriber', 'demoted adm
     expect(await snapshot(target.id)).toEqual(before)
     expect(await db.user.findUnique({ where: { email: `${marker}@example.test` } })).toBeNull()
     for (const path of pages) {
-      for (const headers of [{}, { RSC: '1', 'Next-Router-Prefetch': '1' }]) {
+      for (const headers of [{}, { RSC: '1' }, { RSC: '1', 'Next-Router-Prefetch': '1' }]) {
         const response = await page.request.get(path, { headers, maxRedirects: 0 })
         const text = await response.text()
         const destination = response.headers().location || text
         expect([200, 307, 308]).toContain(response.status())
-        expect(destination).toContain('/login')
-        if (response.status() === 200) expect(text).toContain('NEXT_REDIRECT')
+        if (headers['Next-Router-Prefetch'] && response.status() === 200 && !text.includes('NEXT_REDIRECT')) {
+          // Next 15 omits rendering dynamic routes from automatic prefetch.
+          // Accept only the exact route skeleton, never page/session props.
+          expect(response.headers()['content-type']).toContain('text/x-component')
+          const records = text.trim().split('\n')
+          expect(records).toHaveLength(1)
+          expect(records[0].startsWith('0:')).toBe(true)
+          const payload = JSON.parse(records[0].slice(2))
+          expect(payload).toEqual({
+            b: expect.any(String),
+            f: [[['', { children: ['(dashboard)', { children: [path.slice(1), { children: ['__PAGE__', {}] }] }] }, '$undefined', '$undefined', true], null, [null, null], true]],
+            S: false,
+          })
+        } else {
+          expect(destination).toContain('/login')
+          if (response.status() === 200) expect(text).toContain('NEXT_REDIRECT')
+        }
         for (const secret of [marker, target.email, before.subscription.token, user?.email, session?.id].filter(Boolean)) expect(text).not.toContain(secret)
       }
+      // Exercise actual browser navigation for every page, not only prefetch.
+      await page.goto(path)
+      await expect(page).toHaveURL(/\/login(?:\?|$)/)
+      await expect(page.locator('.o-sidebar')).toHaveCount(0)
+      await expect(page.getByRole('navigation', { name: '主导航' })).toHaveCount(0)
     }
-    await page.goto('/users')
-    await expect(page).toHaveURL(/\/login(?:\?|$)/)
-    await expect(page.locator('.o-sidebar')).toHaveCount(0)
-    await expect(page.getByRole('navigation', { name: '主导航' })).toHaveCount(0)
   })
 }
 
