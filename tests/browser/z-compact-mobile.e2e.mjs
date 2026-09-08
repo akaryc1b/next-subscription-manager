@@ -175,6 +175,15 @@ async function matchingDeliveryActions(group) {
   expect((await rocket.boundingBox()).height).toBeGreaterThanOrEqual(44)
   expect((await ordinary.boundingBox()).height).toBeGreaterThanOrEqual(44)
   await expect(group.locator('.o-rocket-copy')).toHaveCount(0)
+  const contentFits = await group.evaluate(element => [...element.querySelectorAll('button')].every(button => {
+    const box = button.getBoundingClientRect()
+    const css = getComputedStyle(button)
+    const icon = button.querySelector('svg').getBoundingClientRect()
+    const label = button.querySelector('span').getBoundingClientRect()
+    return icon.left >= box.left + parseFloat(css.borderLeftWidth) + parseFloat(css.paddingLeft) - 1
+      && label.right <= box.right - parseFloat(css.borderRightWidth) - parseFloat(css.paddingRight) + 1
+  }))
+  expect(contentFits, 'Delivery icons and labels must stay inside the padded button bounds').toBe(true)
 }
 test('Shadowrocket follows shared action styling in light/dark desktop and compact mobile layouts', async ({ page, browserName }) => {
   await signIn(page)

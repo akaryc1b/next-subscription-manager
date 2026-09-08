@@ -30,7 +30,7 @@
 }
 
 /* Delivery methods share Action tokens; no provider-specific visual theme. */
-.o-delivery-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:8px;min-width:0;width:100%}
+.o-delivery-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px;min-width:0;width:100%}
 .o-delivery-actions .o-button{min-height:44px}
 .o-delivery-actions[data-compact]{display:flex;align-items:center;gap:2px;width:auto;flex-shrink:0}
 .o-row-actions .o-delivery-actions .o-button{min-height:44px;padding:8px 10px;font-size:12px;gap:8px}
