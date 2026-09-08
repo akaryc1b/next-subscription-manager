@@ -30,7 +30,7 @@ jobs:
               assert source.count(old) == 1, f'Unexpected source: {path}: {old[:100]}'
               p.write_text(source.replace(old, new))
           replace('src/styles/workspace.css', '@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}}', '@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}.o-delivery-actions:not([data-compact]){grid-template-columns:minmax(0,1fr)}}')
-          replace('tests/browser/z-compact-mobile.e2e.mjs', "      for (const theme of ['light', 'dark']) {", "      for (const width of [390, 430]) for (const theme of ['light', 'dark']) {\n        await page.setViewportSize({ width, height: 844 })")
+          replace('tests/browser/z-compact-mobile.e2e.mjs', "    for (const theme of ['light', 'dark']) {", "    for (const width of [390, 430]) for (const theme of ['light', 'dark']) {\n      await page.setViewportSize({ width, height: 844 })")
           replace('tests/browser/z-compact-mobile.e2e.mjs', '${browserName}-delivery-${label}-${theme}.png', '${browserName}-delivery-${label}-${width}-${theme}.png')
           PY
           node --check tests/browser/z-compact-mobile.e2e.mjs
