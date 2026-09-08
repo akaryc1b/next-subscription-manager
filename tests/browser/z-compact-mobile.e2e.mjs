@@ -223,11 +223,12 @@ test('drawer and creation delivery actions share the UI and copy without consumi
   async function verifyCopies(dialog, id, label) {
     const before = await metadata(id)
     const group = dialog.getByRole('group', { name: '订阅链接交付', exact: true })
-    for (const theme of ['light', 'dark']) {
+    for (const width of [390, 430]) for (const theme of ['light', 'dark']) {
+      await page.setViewportSize({ width, height: 844 })
       await page.evaluate(dark => document.documentElement.classList.toggle('dark', dark), theme === 'dark')
       await matchingDeliveryActions(group)
       expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
-      await page.screenshot({ path: `tests/browser/evidence/${browserName}-delivery-${label}-${theme}.png` })
+      await page.screenshot({ path: `tests/browser/evidence/${browserName}-delivery-${label}-${width}-${theme}.png` })
     }
     const rocket = group.locator('[data-link-kind="shadowrocket"]')
     await rocket.focus()

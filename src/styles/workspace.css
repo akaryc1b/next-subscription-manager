@@ -35,4 +35,4 @@
 .o-delivery-actions[data-compact]{display:flex;align-items:center;gap:2px;width:auto;flex-shrink:0}
 .o-row-actions .o-delivery-actions .o-button{min-height:44px;padding:8px 10px;font-size:12px;gap:8px}
 .o-row-actions:has(.o-delivery-actions)>.o-button{min-height:44px;min-width:44px}
-@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}}
+@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}.o-delivery-actions:not([data-compact]){grid-template-columns:minmax(0,1fr)}}
