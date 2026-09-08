@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { APIError } from 'better-auth/api'
 import { canAdminLogin } from './admin-login-policy'
 import { adminAuthAdapter } from './admin-auth-adapter'
+import { adminLinkHook } from './admin-oauth-link'
 import { passkey } from '@better-auth/passkey'
 import { prisma } from './prisma'
 
@@ -17,6 +18,7 @@ const githubClientSecret = process.env.GITHUB_CLIENT_SECRET
 export const auth = betterAuth({
   baseURL: authBaseUrl,
   database: adminAuthAdapter(prisma),
+  hooks: { before: adminLinkHook(prisma) },
   databaseHooks: {
     session: {
       create: {
