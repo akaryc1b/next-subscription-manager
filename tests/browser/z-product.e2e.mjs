@@ -38,8 +38,8 @@ for (const viewport of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 
     await expect(page.getByLabel('密码', { exact: true })).toHaveAttribute('type', 'text')
     await page.getByRole('button', { name: '隐藏密码', exact: true }).click()
     await page.goto('/activate')
-    await expect(page.locator('.o-problem')).toContainText('激活链接不完整')
-    await expect(page.getByRole('link', { name: '返回登录' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '此链接已停用' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '管理员登录', exact: true })).toBeVisible()
     await noOverflow(page)
     await capture(page, `${viewport.name}-invitation-unavailable`)
     await authenticated(page)
@@ -76,14 +76,14 @@ test('failed settings reads do not enable authentication removal', async ({ page
   await expect(page.getByRole('button', { name: '保留此方式' })).toBeDisabled()
 })
 
-test('unavailable invitations can retry without showing an editable account', async ({ page }) => {
-  await page.route('**/api/activate/verify?*', route => route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: '验收：网络失败' }) }))
+test('retired activation pages never call the token verification API', async ({ page }) => {
+  const requests = []
+  page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/activate/')) requests.push(request.url()) })
   await page.goto('/activate?token=invalid-fixture')
-  await expect(page.locator('.o-problem')).toContainText('验收：网络失败')
+  await expect(page.getByRole('heading', { name: '此链接已停用' })).toBeVisible()
   await expect(page.getByLabel('登录密码', { exact: true })).toHaveCount(0)
-  await page.unroute('**/api/activate/verify?*')
-  await page.getByRole('button', { name: '重新验证' }).click()
-  await expect(page.locator('.o-problem')).toContainText('不存在')
+  await expect(page.getByRole('button', { name: '重新验证' })).toHaveCount(0)
+  expect(requests).toEqual([])
 })
 
 test('Enter in quota writes only quota, not account authorization', async ({ page }) => {

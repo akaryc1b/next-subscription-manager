@@ -52,8 +52,8 @@ for (const target of [
     await signIn(page)
     await loaded(page, '/dashboard')
     await page.keyboard.press('Control+k')
+    await page.getByRole('combobox', { name: '搜索页面、账户或配置' }).fill('lin.design')
     await expect(page.getByRole('option', { name: /lin.design@example.test/ })).toBeVisible()
-    await expect(page.getByRole('option', { name: /日常使用/ })).toBeVisible()
     let release
     const gate = new Promise(resolve => { release = resolve })
     let requests = 0

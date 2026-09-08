@@ -36,7 +36,7 @@ src/
 | `/api/subscriptions` | 订阅管理 |
 | `/api/sub/[token]` | 订阅内容获取 |
 | `/api/stats` | 统计数据 |
-| `/api/activate/verify, setup` | 用户激活 |
+| `/api/activate/verify, setup` | 已停用，固定返回 410，不读取令牌 |
 
 ---
 
@@ -58,7 +58,7 @@ User (id, username, password, email, role, isActive, isBanned, expiresAt)
 
 **登录**: 密码 / Passkey / GitHub OAuth → Better Auth Session
 
-**激活**: 管理员创建用户 → 激活令牌 → `/activate?token=xxx` → 选择认证方式
+**订阅交付**: 管理员创建订阅用户 → 分配配置 → 复制订阅/Shadowrocket 链接；普通用户不激活、不设置密码、不登录。只有启用且未封禁的管理员可创建认证会话。
 
 ---
 

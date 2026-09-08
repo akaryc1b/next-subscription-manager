@@ -1,5 +1,8 @@
 import { betterAuth } from 'better-auth'
-import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { APIError } from 'better-auth/api'
+import { canAdminLogin } from './admin-login-policy'
+import { adminAuthAdapter } from './admin-auth-adapter'
+import { adminLinkHook } from './admin-oauth-link'
 import { passkey } from '@better-auth/passkey'
 import { prisma } from './prisma'
 
@@ -14,7 +17,25 @@ const githubClientSecret = process.env.GITHUB_CLIENT_SECRET
 
 export const auth = betterAuth({
   baseURL: authBaseUrl,
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+  database: adminAuthAdapter(prisma),
+  hooks: { before: adminLinkHook(prisma) },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async session => {
+          // An early rejection; the adapter rechecks atomically with the insert.
+          const account = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { role: true, isActive: true, isBanned: true },
+          })
+          if (!canAdminLogin(account)) {
+            throw new APIError('FORBIDDEN', { code: 'ADMIN_ONLY', message: '仅启用且未封禁的管理员可以登录' })
+          }
+          return { data: session }
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
@@ -25,7 +46,16 @@ export const auth = betterAuth({
     github: { clientId: githubClientId, clientSecret: githubClientSecret, disableImplicitSignUp: true },
   } : {},
   plugins: [passkey()],
-  account: { accountLinking: { enabled: true, trustedProviders: ['github'], allowDifferentEmails: false } },
-  session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  account: {
+    accountLinking: {
+      enabled: true,
+      // A matching provider email is not authorization to add an admin login.
+      // This also rejects sign-in callbacks started before an account's promotion.
+      disableImplicitLinking: true,
+      trustedProviders: ['github'],
+      allowDifferentEmails: false,
+    },
+  },
+  session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24, cookieCache: { enabled: false } },
   trustedOrigins,
 })

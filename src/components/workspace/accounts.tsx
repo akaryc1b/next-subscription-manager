@@ -4,11 +4,12 @@ import { useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowUpRight, Copy, Plus, Rocket, Search } from 'lucide-react'
+import { ArrowUpRight, Plus, Search } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useDebounced, useResource } from '@/hooks/use-workspace'
 import { accountFilters, accountState, configHref, formatDate, type AccountList } from '@/lib/workspace'
 import { copyAccountLink } from './subscription-link'
+import { SubscriptionActions } from './subscription-actions'
 import { Action, Avatar, Empty, Loading, PageTitle, Pager, Pill, Problem, Refresh } from './ui'
 
 const AccountPanel = dynamic(() => import('./account-editor'), { ssr: false, loading: () => <Loading/> })
@@ -45,7 +46,7 @@ export function AccountsPage() {
           <td data-label="访问条件"><Pill tone={state.tone}>{state.label}</Pill><span className="o-cell-secondary">{state.detail}</span></td>
           <td data-label="配置授权"><div className="o-profile-links">{account.userConfigs.length ? account.userConfigs.slice(0, 2).map(({ config }) => <Link prefetch={false} key={config.id} href={configHref(config.id)}>{config.name}{!config.isActive && '（停用）'}</Link>) : <span className="o-muted">尚未分配</span>}{account.userConfigs.length > 2 && <button type="button" className="o-text-link" onClick={() => navigate('account', account.id)}>+{account.userConfigs.length - 2}</button>}</div></td>
           <td data-label="访问次数">{account.subscription ? <><span>{account.subscription.accessCount.toLocaleString()} / {account.subscription.maxAccess === 0 ? '不限' : account.subscription.maxAccess.toLocaleString()}</span>{account.subscription.maxAccess > 0 && <span className="o-meter" aria-hidden="true"><i style={{ width: `${Math.min(100, account.subscription.accessCount / account.subscription.maxAccess * 100)}%` }}/></span>}</> : <span className="o-muted">无订阅</span>}</td>
-          <td><div className="o-row-actions">{account.subscription && <><Action className="o-rocket-copy" aria-label={`复制 ${account.email} 的 Shadowrocket 链接`} title="复制 Shadowrocket 链接" disabled={copying !== null} onClick={() => void copy(account.id, true)}><Rocket/><span>Shadowrocket</span></Action><Action variant="quiet" aria-label={`复制 ${account.email} 的订阅链接`} title="复制订阅链接" disabled={copying !== null} onClick={() => void copy(account.id)}><Copy/></Action></>}<Action variant="quiet" aria-label={`管理 ${account.email}`} onClick={() => navigate('account', account.id)}><ArrowUpRight/></Action></div></td>
+          <td><div className="o-row-actions">{account.subscription && <SubscriptionActions compact email={account.email} disabled={copying !== null} onCopy={rocket => void copy(account.id, rocket)}/>}<Action variant="quiet" aria-label={`管理 ${account.email}`} onClick={() => navigate('account', account.id)}><ArrowUpRight/></Action></div></td>
         </tr>
       })}</tbody></table></div> : <Empty title={search ? '没有找到这个账户' : filter === 'all' ? '还没有订阅账户' : '这个筛选下没有账户'} description={search ? '换一个邮箱关键词再试试。' : filter === 'all' ? '创建账户、分配配置，然后交付订阅链接。' : '可以切换到全部账户，查看完整列表。'} action={<Action onClick={() => { setPage(1); if (search) setQuery(''); else navigate(filter === 'all' ? 'new' : 'filter', filter === 'all' ? '1' : 'all') }}>{search ? '清空搜索' : filter === 'all' ? '创建账户' : '查看全部'}</Action>}/>}
       <Pager pagination={resource.data.pagination} onPage={setPage}/>

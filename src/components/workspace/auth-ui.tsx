@@ -15,6 +15,7 @@ export function usePasskeySupport() {
 }
 
 export function authMessage(error: { code?: string; status?: number; message?: string }, fallback: string) {
+  if (error.code === 'ADMIN_ONLY') return '仅管理员可以登录，订阅用户请使用订阅链接。'
   if (error.status === 429 || /RATE_LIMIT|TOO_MANY/i.test(error.code || '') || /too many|频繁/i.test(error.message || '')) {
     return '尝试过于频繁，请稍后再试。'
   }
