@@ -14,13 +14,16 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 2
+          fetch-depth: 0
       - name: Keep complete delivery labels single-column at all phone widths
         shell: bash
         run: |
-          test "$(git rev-parse HEAD^)" = a8368171330b9f88ef23bb7b8730ad711fe3a664
           python3 - <<'PY'
           from pathlib import Path
+          import subprocess
+          changes = subprocess.check_output(['git', 'diff', '--name-only', 'a8368171330b9f88ef23bb7b8730ad711fe3a664', 'HEAD'], text=True).splitlines()
+          allowed = {'.github/workflows/pr28-audit-source.yml', '.github/workflows/pr28-refine.yml'}
+          assert set(changes).issubset(allowed), f'Unexpected source changes: {changes}'
           def replace(path, old, new):
               p = Path(path)
               source = p.read_text()
