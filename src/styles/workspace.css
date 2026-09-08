@@ -13,8 +13,6 @@
 
 /* Compact actions. No frame-by-frame page animations or touch hover effects. */
 .o-setup-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--o-line);font-size:12px;color:var(--o-muted)}
-.o-rocket-copy{color:var(--o-accent);font-size:11px;background:var(--o-accent-soft)}
-.o-row-actions .o-rocket-copy{padding:7px 10px;gap:6px}
 @media(max-width:639px){
   .orbit-root .o-loading>div,.orbit-portal .o-loading>div{animation:none}
   .orbit-portal.o-overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -23,7 +21,6 @@
   .o-table td:last-child{grid-column:1/-1}
   .o-table .o-row-actions{justify-content:flex-start;gap:8px}
   .o-table .o-row-actions .o-button,.o-button,.o-tabs button,.o-search-trigger{min-height:44px}
-  .o-row-actions .o-rocket-copy{padding:9px 12px;font-size:12px}
   .orbit-root .o-search input,.orbit-root .o-input,.orbit-root .o-select{font-size:16px}
   .o-event{min-height:66px}
 }
@@ -31,3 +28,11 @@
   .orbit-root .o-button:hover:not(:disabled),.orbit-portal .o-button:hover:not(:disabled){transform:none;box-shadow:none}
   .orbit-root .o-event:hover,.orbit-root .o-table tbody tr:hover{background:transparent}
 }
+
+/* Delivery methods share Action tokens; no provider-specific visual theme. */
+.o-delivery-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:8px;min-width:0;width:100%}
+.o-delivery-actions .o-button{min-height:44px}
+.o-delivery-actions[data-compact]{display:flex;align-items:center;gap:2px;width:auto;flex-shrink:0}
+.o-row-actions .o-delivery-actions .o-button{min-height:44px;padding:8px 10px;font-size:12px;gap:8px}
+.o-row-actions:has(.o-delivery-actions)>.o-button{min-height:44px;min-width:44px}
+@media(max-width:639px){.o-table .o-row-actions:has(.o-delivery-actions){gap:4px}.o-row-actions .o-delivery-actions .o-button{padding:8px}}

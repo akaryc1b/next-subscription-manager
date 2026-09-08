@@ -155,3 +155,97 @@ test('mobile native clipboard accepts a Shadowrocket write without consuming quo
     expect(decoded.startsWith(`${new URL(page.url()).origin}/api/sub/`)).toBe(true)
   }
 })
+
+async function matchingDeliveryActions(group) {
+  const ordinary = group.locator('[data-link-kind="subscription"]')
+  const rocket = group.locator('[data-link-kind="shadowrocket"]')
+  await expect(ordinary).toBeVisible()
+  await expect(rocket).toBeVisible()
+  const style = element => {
+    const css = getComputedStyle(element)
+    const icon = getComputedStyle(element.querySelector('svg'))
+    return [css.backgroundColor, css.color, css.borderRadius, css.fontSize, css.fontWeight, css.borderWidth, icon.width, icon.height, icon.strokeWidth]
+  }
+  expect(await rocket.evaluate(style)).toEqual(await ordinary.evaluate(style))
+  expect((await rocket.boundingBox()).height).toBeGreaterThanOrEqual(44)
+  expect((await ordinary.boundingBox()).height).toBeGreaterThanOrEqual(44)
+  await expect(group.locator('.o-rocket-copy')).toHaveCount(0)
+}
+test('Shadowrocket follows shared action styling in light/dark desktop and compact mobile layouts', async ({ page, browserName }) => {
+  await signIn(page)
+  await mkdir('tests/browser/evidence', { recursive: true })
+  for (const width of [1440, 390, 320]) for (const theme of ['light', 'dark']) {
+    await page.setViewportSize({ width, height: width > 1000 ? 1000 : 844 })
+    await loaded(page, '/users')
+    await page.evaluate(dark => document.documentElement.classList.toggle('dark', dark), theme === 'dark')
+    const rocket = page.getByRole('button', { name: '复制 lin.design@example.test 的 Shadowrocket 链接', exact: true })
+    await rocket.scrollIntoViewIfNeeded()
+    const group = rocket.locator('..')
+    await matchingDeliveryActions(group)
+    const box = await group.boundingBox()
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(width + 1)
+    await rocket.focus()
+    expect(await rocket.evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe('none')
+    await noOverflow(page)
+    await page.screenshot({ path: `tests/browser/evidence/${browserName}-delivery-${width}-${theme}.png` })
+  }
+})
+test('drawer and creation delivery actions share the UI and copy without consuming access counts', async ({ page, browserName }) => {
+  const database = new URL(process.env.DATABASE_URL || 'invalid:')
+  if (process.env.WORKSPACE_E2E !== '1' || !['localhost', '127.0.0.1'].includes(database.hostname) || database.pathname !== '/workspace_e2e') throw new Error('Delivery fixtures require local workspace_e2e.')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page)
+  await page.addInitScript(() => {
+    window.ClipboardItem = undefined
+    window.__deliveryText = ''
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { window.__deliveryText = text } } })
+  })
+  const contentRequests = []
+  page.on('request', request => { if (new URL(request.url()).pathname.startsWith('/api/sub/')) contentRequests.push(request.url()) })
+  await loaded(page, '/users')
+  const account = (await (await page.request.get('/api/workspace?view=accounts&q=lin.design')).json()).users[0]
+  const metadata = async id => (await (await page.request.get(`/api/users/${id}/subscription`)).json()).subscription
+  async function verifyCopies(dialog, id, label) {
+    const before = await metadata(id)
+    const group = dialog.getByRole('group', { name: '订阅链接交付', exact: true })
+    for (const theme of ['light', 'dark']) {
+      await page.evaluate(dark => document.documentElement.classList.toggle('dark', dark), theme === 'dark')
+      await matchingDeliveryActions(group)
+      expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+      await page.screenshot({ path: `tests/browser/evidence/${browserName}-delivery-${label}-${theme}.png` })
+    }
+    const rocket = group.locator('[data-link-kind="shadowrocket"]')
+    await rocket.focus()
+    await rocket.press('Enter')
+    await expect.poll(() => page.evaluate(() => window.__deliveryText.startsWith('sub://'))).toBe(true)
+    const value = await page.evaluate(() => window.__deliveryText)
+    expect(Buffer.from(value.slice(6), 'base64').toString('utf8')).toBe(`${new URL(page.url()).origin}/api/sub/${before.token}`)
+    await expect(rocket).toBeEnabled()
+    await group.locator('[data-link-kind="subscription"]').click()
+    await expect.poll(() => page.evaluate(() => window.__deliveryText)).toBe(`${new URL(page.url()).origin}/api/sub/${before.token}`)
+    await expect(rocket).toBeEnabled()
+    expect((await metadata(id)).accessCount).toBe(before.accessCount)
+  }
+  await page.getByRole('button', { name: '管理 lin.design@example.test', exact: true }).click()
+  let dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: '链接与额度', exact: true }).click()
+  await verifyCopies(dialog, account.id, 'drawer')
+  await dialog.getByRole('button', { name: '关闭详情', exact: true }).click()
+  let createdId
+  try {
+    await page.getByRole('button', { name: '创建账户', exact: true }).click()
+    dialog = page.getByRole('dialog')
+    await dialog.getByRole('textbox', { name: '账户邮箱', exact: true }).fill(`delivery-${browserName}-${Date.now()}@example.test`)
+    const responsePromise = page.waitForResponse(response => new URL(response.url()).pathname === '/api/users' && response.request().method() === 'POST')
+    await dialog.getByRole('button', { name: '创建账户', exact: true }).click()
+    const response = await responsePromise
+    expect(response.status()).toBe(200)
+    createdId = (await response.json()).user.id
+    await expect(dialog.getByRole('heading', { name: '账户已准备好', exact: true })).toBeVisible()
+    await verifyCopies(dialog, createdId, 'created')
+    expect(contentRequests).toEqual([])
+  } finally {
+    if (createdId) expect((await page.request.delete(`/api/users/${createdId}`)).status()).toBe(200)
+  }
+})

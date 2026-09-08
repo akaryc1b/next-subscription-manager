@@ -2,12 +2,13 @@
 
 import { useRef, useState, type FormEvent } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Copy, Search } from 'lucide-react'
+import { ArrowUpRight, Search } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { request, useDebounced, useResource } from '@/hooks/use-workspace'
 import { useUnsaved } from '@/hooks/use-unsaved'
 import { accountState, configHref, formatDate, type Account, type AccountList, type ProfileList } from '@/lib/workspace'
 import { copyAccountLink } from './subscription-link'
+import { SubscriptionActions } from './subscription-actions'
 import { Action, Confirm, Drawer, Empty, Loading, Pager, Pill, Problem, Saved } from './ui'
 
 function localDateTime(value: string | null) {
@@ -111,7 +112,7 @@ function AccountEditor({ account, onClose, onChanged }: { account: Account | nul
         {error && <Problem message={error}/>}
         {created.role === 'user' ? <>
           <p className="o-description" style={{ margin: '16px 0' }}>订阅用户无需登录，复制链接交给用户即可。</p>
-          <div className="o-actions"><Action variant="primary" disabled={busy} onClick={() => void copy(true)}>复制 Shadowrocket 链接</Action><Action disabled={busy} onClick={() => void copy()}><Copy/>复制订阅链接</Action></div>
+          <SubscriptionActions disabled={busy} onCopy={rocket => void copy(rocket)}/>
         </> : <p className="o-description" style={{ marginTop: 20 }}>管理员可使用刚才设置的邮箱与密码登录。</p>}
         <div className="o-actions" style={{ marginTop: 24 }}><Action disabled={busy} onClick={close}>完成</Action></div>
       </div> : <>
@@ -128,7 +129,7 @@ function AccountEditor({ account, onClose, onChanged }: { account: Account | nul
             </> : account?.subscription && <>
               <Pill tone={accountState(account).tone}>{accountState(account).label}</Pill>
               <div className="o-insight"><h3>订阅链接</h3><p>订阅链接默认长期有效。复制不会消耗额度；直接打开订阅地址会计入访问次数。</p></div>
-              <div className="o-actions"><Action onClick={() => void copy()} disabled={busy}><Copy/>复制订阅链接</Action><Action onClick={() => void copy(true)} disabled={busy}>复制 Shadowrocket 链接</Action></div>
+              <SubscriptionActions disabled={busy} onCopy={rocket => void copy(rocket)}/>
               <section className="o-form-section"><h3>访问额度</h3><dl className="o-facts"><div><dt>已使用</dt><dd>{account.subscription.accessCount.toLocaleString()} 次</dd></div><div><dt>链接更新于</dt><dd>{formatDate(account.subscription.tokenRotatedAt, true)}</dd></div></dl><label className="o-field" style={{ marginTop: 18 }}><span>允许的总访问次数</span><input className="o-input" type="number" required min="0" max="2147483647" step="1" value={quota} onChange={event => setQuota(event.target.value)} disabled={busy}/><small>0 表示不限制。这里调整总上限，不会清空已使用次数。</small></label><Action type="submit" disabled={busy || formDirty} variant="primary">{busy ? '正在处理…' : '保存额度'}</Action></section>
               <section className="o-form-section"><h3>更换链接</h3><p className="o-footnote">旧链接会立即失效，访问次数与额度保持不变。</p><Action disabled={busy || dirty} onClick={() => setConfirm('rotate')} style={{ marginTop: 12 }}>更换订阅链接</Action></section>
             </>}

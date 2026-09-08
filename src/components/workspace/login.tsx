@@ -12,7 +12,7 @@ export function LoginForm({ githubEnabled, forbidden, callbackError }: { githubE
   const passkeySupported = usePasskeySupport()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(callbackError ? '登录授权未完成，请重新选择登录方式。' : '')
+  const [error, setError] = useState(callbackError ? '登录授权未完成。首次使用 GitHub 请先用管理员密码登录，再到设置绑定。' : '')
   const [method, setMethod] = useState<'password' | 'passkey' | 'github' | null>(null)
   const pending = useRef(false)
   const busy = method !== null
