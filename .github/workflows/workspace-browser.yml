@@ -70,7 +70,7 @@ jobs:
         if: ${{ !cancelled() && steps.browser_tools.outcome == 'success' }}
         env:
           BROWSER: webkit
-        run: tests/browser/node_modules/.bin/playwright test z-compact-mobile.e2e.mjs --config=tests/browser/playwright.config.mjs
+        run: tests/browser/node_modules/.bin/playwright test z-compact-mobile.e2e.mjs z-mobile-account-flow.e2e.mjs --config=tests/browser/playwright.config.mjs
       - name: Upload screenshots and test evidence
         if: always()
         uses: actions/upload-artifact@v4

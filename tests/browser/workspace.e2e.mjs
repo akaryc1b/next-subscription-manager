@@ -17,14 +17,14 @@ test('quota changes persist without consuming access', async ({ page }) => {
   await dialog.getByRole('button', { name: '链接与额度', exact: true }).click()
   await expect(dialog.getByText('1 次', { exact: true })).toBeVisible()
   await dialog.getByLabel('允许的总访问次数').fill('9')
-  // A click dispatches the async save; it is not evidence of its commit.
   const saved = page.waitForResponse(response => new URL(response.url()).pathname === `/api/users/${account.id}/subscription` && response.request().method() === 'PATCH')
-  await dialog.getByRole('button', { name: '保存额度', exact: true }).click()
+  await dialog.getByRole('button', { name: '保存修改', exact: true }).click()
   const mutation = await saved
   expect(mutation.status(), await mutation.text()).toBe(200)
   expect(mutation.request().postDataJSON()).toEqual({ maxAccess: 9 })
-  await expect(page.getByText('访问额度已更新', { exact: true })).toBeVisible()
-  await expect(dialog).toHaveCount(0)
+  await expect(page.getByText('账户信息与额度已保存', { exact: true })).toBeVisible()
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '复制订阅链接', exact: true })).toBeEnabled()
   const response = await page.request.get(`/api/users/${account.id}/subscription`)
   expect(response.status()).toBe(200)
   const subscription = (await response.json()).subscription
