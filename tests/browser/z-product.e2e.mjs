@@ -86,7 +86,7 @@ test('retired activation pages never call the token verification API', async ({ 
   expect(requests).toEqual([])
 })
 
-test('Enter in quota writes only quota, not account authorization', async ({ page }) => {
+test('Enter in quota writes only quota when account fields are unchanged and keeps delivery open', async ({ page }) => {
   await authenticated(page)
   const account = (await (await page.request.get('/api/workspace?view=accounts&q=quota.test')).json()).users[0]
   await loaded(page, `/users?account=${account.id}`)
@@ -96,7 +96,9 @@ test('Enter in quota writes only quota, not account authorization', async ({ pag
   page.on('request', request => { if (['PUT', 'PATCH'].includes(request.method())) writes.push({ path: new URL(request.url()).pathname, method: request.method() }) })
   await dialog.getByLabel('允许的总访问次数').fill('17')
   await dialog.getByLabel('允许的总访问次数').press('Enter')
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(dialog.locator('.o-saved')).toBeVisible()
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: '复制订阅链接', exact: true })).toBeEnabled()
   expect(writes).toEqual([{ path: `/api/users/${account.id}/subscription`, method: 'PATCH' }])
   const after = (await (await page.request.get(`/api/users/${account.id}/subscription`)).json()).subscription
   expect(after.maxAccess).toBe(17)

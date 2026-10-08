@@ -38,8 +38,10 @@ COPY . .
 # Ensure public directory exists
 RUN mkdir -p ./public
 
-# Build Next.js
-RUN pnpm build
+# Validate guards, build the app and retain the dynamic native metadata alias.
+RUN node --test tests/security/runtime-dependencies.node.mjs tests/security/sharp-standalone.node.mjs \
+    && pnpm build \
+    && node scripts/prepare-sharp-standalone.mjs
 
 # Dedicated migration image; not used by the production app runner.
 FROM deps AS migration
@@ -71,8 +73,13 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy generated Prisma Client artifacts produced during the build stages.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/check-runtime-dependencies.mjs ./scripts/check-runtime-dependencies.mjs
 
 USER nextjs
+
+# Check the actual standalone packages and loaded native libraries, not merely
+# package.json. This runs for every built architecture; Trivy remains mandatory.
+RUN node scripts/check-runtime-dependencies.mjs
 
 EXPOSE 3000
 

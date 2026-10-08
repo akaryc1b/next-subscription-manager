@@ -19,51 +19,33 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 const securityHeaders = [
-  {
-    key: 'Content-Security-Policy',
-    value: contentSecurityPolicy,
-  },
-  {
-    key: 'X-Content-Type-Options',
-    value: 'nosniff',
-  },
-  {
-    key: 'X-Frame-Options',
-    value: 'DENY',
-  },
-  {
-    key: 'Referrer-Policy',
-    value: 'no-referrer',
-  },
+  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'no-referrer' },
   {
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), publickey-credentials-get=(self), publickey-credentials-create=(self)',
   },
-  {
-    key: 'Cross-Origin-Opener-Policy',
-    value: 'same-origin',
-  },
-  {
-    key: 'X-DNS-Prefetch-Control',
-    value: 'off',
-  },
-  ...(isProduction
-    ? [{
-        key: 'Strict-Transport-Security',
-        value: 'max-age=31536000',
-      }]
-    : []),
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  { key: 'X-DNS-Prefetch-Control', value: 'off' },
+  ...(isProduction ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000' }] : []),
 ]
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // sharp 0.35 loads native binaries and their version metadata dynamically.
+  // Trace the installed @img sharp packages together, including libvips shared
+  // objects; a metadata-only include can leave an unloadable native module.
+  // Keep this scoped to sharp, never all of node_modules or the project tree.
+  outputFileTracingIncludes: {
+    '/*': [
+      './node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/**/*',
+      './node_modules/@img/sharp-*/**/*',
+    ],
+  },
   async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: securityHeaders,
-      },
-    ]
+    return [{ source: '/:path*', headers: securityHeaders }]
   },
 }
 

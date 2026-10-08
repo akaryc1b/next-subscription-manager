@@ -24,7 +24,7 @@ export default function CommandPalette({ onClose }: { onClose: () => void }) {
   const items = [
     ...navigation.filter(item => !query || item.label.includes(query)).map(item => ({ href: item.href, label: item.label, group: '页面', icon: item.icon })),
     ...(!query ? [{ href: '/users?new=1', label: '创建订阅账户', group: '操作', icon: Plus }, { href: '/configs?new=1', label: '新建配置', group: '操作', icon: Plus }] : []),
-    ...userResults.map(user => ({ href: accountHref(user.id), label: user.email, group: '账户', icon: Users })),
+    ...userResults.map(user => ({ href: `${accountHref(user.id)}&q=${encodeURIComponent(search)}`, label: user.email, group: '账户', icon: Users })),
     ...configResults.map(config => ({ href: configHref(config.id), label: config.name, group: '配置', icon: FileSliders })),
   ]
   const index = items.length ? Math.max(0, Math.min(selected, items.length - 1)) : -1

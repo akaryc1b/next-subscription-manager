@@ -41,8 +41,11 @@ for (const existing of [false, true]) {
       if (!existing) expect(await db.user.count({ where: { email } })).toBe(0)
       await drawer.getByRole('checkbox', { name: new RegExp(key) }).check()
       await drawer.getByRole('button', { name: existing ? '保存修改' : '创建账户', exact: true }).click()
-      if (existing) await expect(page.getByRole('dialog')).toHaveCount(0)
-      else await expect(drawer.getByText('账户已创建，授权配置已保存。')).toBeVisible()
+      if (existing) {
+        await expect(drawer.locator('.o-saved')).toBeVisible()
+        await expect(drawer).toBeVisible()
+        await expect(drawer.getByRole('button', { name: '保存修改', exact: true })).toBeDisabled()
+      } else await expect(drawer.getByText('账户已创建，授权配置已保存。')).toBeVisible()
       expect(writes).toHaveLength(1)
       const saved = await db.user.findUniqueOrThrow({ where: { email }, include: { userConfigs: true } })
       expect(saved.userConfigs.map(item => item.configId)).toEqual([profile.id])
