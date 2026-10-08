@@ -65,7 +65,7 @@ test('mobile global search -> one save -> native copy retains the selected user 
     const box = await copy(dialog).boundingBox()
     expect(box.y + box.height).toBeLessThanOrEqual(845)
     await copy(dialog).click()
-    await expect(page.getByText('已复制订阅链接，请仅交给授权用户', { exact: true })).toBeVisible()
+    await expect(page.getByText('已复制订阅链接', { exact: true })).toBeVisible()
     if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`${new URL(page.url()).origin}/api/sub/${before.token}`)
     expect((await metadata(page, user.id)).accessCount).toBe(before.accessCount)
     expect(deliveries).toEqual([])
