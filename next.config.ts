@@ -34,13 +34,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  // sharp 0.35 reads its prebuilt native dependency versions through a dynamic
-  // createRequire() path. Keep this metadata beside the traced binaries; do not
-  // manufacture versions or weaken the final-image security check.
+  // sharp 0.35 loads native binaries and their version metadata dynamically.
+  // Trace the installed @img sharp packages together, including libvips shared
+  // objects; a metadata-only include can leave an unloadable native module.
+  // Keep this scoped to sharp, never all of node_modules or the project tree.
   outputFileTracingIncludes: {
     '/*': [
-      './node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/versions.json',
-      './node_modules/@img/sharp-*/versions.json',
+      './node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/**/*',
+      './node_modules/@img/sharp-*/**/*',
     ],
   },
   async headers() {
