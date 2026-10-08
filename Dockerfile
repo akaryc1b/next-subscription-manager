@@ -38,8 +38,10 @@ COPY . .
 # Ensure public directory exists
 RUN mkdir -p ./public
 
-# Validate the security floor checker before building Next.js.
-RUN node --test tests/security/runtime-dependencies.node.mjs && pnpm build
+# Validate guards, build the app and retain the dynamic native metadata alias.
+RUN node --test tests/security/runtime-dependencies.node.mjs tests/security/sharp-standalone.node.mjs \
+    && pnpm build \
+    && node scripts/prepare-sharp-standalone.mjs
 
 # Dedicated migration image; not used by the production app runner.
 FROM deps AS migration
